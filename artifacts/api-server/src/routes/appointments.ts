@@ -1,10 +1,28 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { appointmentsTable, providersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { CreateAppointmentBody, UpdateAppointmentBody } from "@workspace/api-zod";
 
 const router = Router();
+
+router.get("/slots", async (req, res) => {
+  try {
+    const { providerId, date } = req.query as { providerId?: string; date?: string };
+    if (!providerId || !date) return res.status(400).json({ error: "providerId and date are required" });
+    const pid = parseInt(providerId);
+    if (isNaN(pid)) return res.status(400).json({ error: "Invalid providerId" });
+
+    const booked = await db
+      .select({ time: appointmentsTable.time })
+      .from(appointmentsTable)
+      .where(and(eq(appointmentsTable.providerId, pid), eq(appointmentsTable.date, date)));
+
+    res.json({ bookedSlots: booked.map((r) => r.time) });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch slots" });
+  }
+});
 
 router.get("/", async (req, res) => {
   try {
@@ -38,6 +56,21 @@ router.post("/", async (req, res) => {
       .where(eq(providersTable.id, data.providerId));
 
     const providerName = provider ? provider.name : "Unknown Provider";
+
+    const [existing] = await db
+      .select({ id: appointmentsTable.id })
+      .from(appointmentsTable)
+      .where(
+        and(
+          eq(appointmentsTable.providerId, data.providerId),
+          eq(appointmentsTable.date, data.date),
+          eq(appointmentsTable.time, data.time),
+        )
+      );
+
+    if (existing) {
+      return res.status(409).json({ error: "This slot is already booked. Please choose another time." });
+    }
 
     const [appointment] = await db
       .insert(appointmentsTable)
