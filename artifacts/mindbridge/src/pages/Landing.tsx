@@ -83,23 +83,52 @@ export default function Landing() {
           >
             Connect with board-certified psychiatrists and therapists who truly listen. Evidence-based treatment for anxiety, depression, ADHD, PTSD, and more — from the comfort of home.
           </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.35 }}
+            className="text-white/50 text-sm font-medium mb-4 tracking-wide"
+          >
+            Choose the type of care you're looking for
+          </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.4 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
+            className="flex flex-col sm:flex-row gap-3 justify-center max-w-2xl mx-auto"
+          >
+            {[
+              { id: "individual", emoji: "🧠", title: "Individual Therapy", sub: "Adults 18 and above" },
+              { id: "couples", emoji: "💑", title: "Couples Counseling", sub: "For you or with a partner" },
+              { id: "children", emoji: "🧒", title: "Children & Teens", sub: "Under 18 years" },
+            ].map((svc, i) => (
+              <Link
+                key={svc.id}
+                href={`/get-started?type=${svc.id}`}
+                className="group flex-1 flex flex-col items-center gap-2 px-4 py-5 rounded-2xl bg-white/8 border border-white/15 hover:bg-white hover:border-white hover:shadow-2xl transition-all duration-250 hover:-translate-y-1 text-center"
+              >
+                <span className="text-3xl">{svc.emoji}</span>
+                <div>
+                  <div className="text-white group-hover:text-foreground font-semibold text-sm transition-colors">{svc.title}</div>
+                  <div className="text-white/50 group-hover:text-muted-foreground text-xs mt-0.5 transition-colors">{svc.sub}</div>
+                </div>
+                <div className="flex items-center gap-1 text-white/40 group-hover:text-primary text-xs font-medium transition-colors mt-1">
+                  Get started <ArrowRight className="w-3 h-3" />
+                </div>
+              </Link>
+            ))}
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+            className="mt-5"
           >
             <Link
               href="/providers"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white text-foreground font-semibold text-lg hover:bg-white/95 transition-all duration-200 shadow-xl hover:shadow-2xl hover:-translate-y-0.5"
+              className="text-white/40 hover:text-white/70 text-sm transition-colors underline underline-offset-4"
             >
-              Find a Provider <ArrowRight className="w-5 h-5" />
-            </Link>
-            <Link
-              href="/book"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/10 border border-white/20 text-white font-semibold text-lg hover:bg-white/20 transition-all duration-200 backdrop-blur-sm"
-            >
-              Book a Session
+              Browse all providers instead
             </Link>
           </motion.div>
           {stats && (
@@ -253,7 +282,7 @@ export default function Landing() {
           </div>
           <FadeIn delay={0.5} className="text-center mt-12">
             <Link
-              href="/book"
+              href="/get-started"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-semibold text-lg hover:opacity-90 transition-all hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
             >
               Get started today <ArrowRight className="w-5 h-5" />
@@ -330,16 +359,16 @@ export default function Landing() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/providers"
+                href="/get-started"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white text-foreground font-semibold text-lg hover:bg-white/95 transition-all hover:-translate-y-0.5 shadow-xl"
               >
-                Find your provider <ArrowRight className="w-5 h-5" />
+                Start your assessment <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
-                href="/book"
+                href="/providers"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-white/10 border border-white/20 text-white font-semibold text-lg hover:bg-white/20 transition-all"
               >
-                Book a session
+                Browse providers
               </Link>
             </div>
           </FadeIn>

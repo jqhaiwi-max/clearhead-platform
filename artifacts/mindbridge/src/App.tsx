@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +10,7 @@ import ProviderDetail from "@/pages/ProviderDetail";
 import Book from "@/pages/Book";
 import Appointments from "@/pages/Appointments";
 import Specialties from "@/pages/Specialties";
+import Intake from "@/pages/Intake";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -21,10 +22,15 @@ const queryClient = new QueryClient({
   },
 });
 
+const FULL_SCREEN_ROUTES = ["/get-started"];
+
 function Router() {
+  const [location] = useLocation();
+  const isFullScreen = FULL_SCREEN_ROUTES.some((r) => location.startsWith(r));
+
   return (
     <>
-      <Navbar />
+      {!isFullScreen && <Navbar />}
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/providers" component={Providers} />
@@ -34,9 +40,10 @@ function Router() {
         <Route path="/book" component={Book} />
         <Route path="/appointments" component={Appointments} />
         <Route path="/specialties" component={Specialties} />
+        <Route path="/get-started" component={Intake} />
         <Route component={NotFound} />
       </Switch>
-      <Footer />
+      {!isFullScreen && <Footer />}
     </>
   );
 }
