@@ -1,2 +1,5 @@
 - [API Server validation pattern](api-server-validation.md) — use manual validation or @workspace/api-zod; never import zod directly (not installed in api-server)
 - [DB seeding approach](db-seeding.md) — seed providers via `psql "$DATABASE_URL"` heredoc; tsx scripts fail (no drizzle-orm in scripts package)
+- [Clearhead booking journey](clearhead-booking.md) — Full 9-step wizard at `/get-started` (BookingJourney.tsx); `/checkout` is still standalone; provider deep-link via `?provider=ID` skips to step 4.
+- [Clearhead pricing.ts structure](clearhead-pricing.md) — CountryPricing type requires tiers[], taxRate, taxNote; auto-computed by buildCountry()/makeTiers(); formatPrice/toUSD must be exported.
+- [Clearhead DB constraints](clearhead-db.md) — appointments table has no duration column; slots endpoint uses drizzle and() for compound WHERE; POST /appointments checks for conflicts and returns 409.

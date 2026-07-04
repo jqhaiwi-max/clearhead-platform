@@ -224,7 +224,7 @@ export default function ProviderDetail({ id }: Props) {
                     )}
                     <p className="text-xs text-muted-foreground mt-1">Video, phone, or messaging</p>
                   </div>
-                  <Link href={`/book?provider=${provider.id}`}
+                  <Link href={`/get-started?provider=${provider.id}`}
                     className="block w-full text-center py-3 px-4 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity shadow-sm mb-3">
                     Book a Session
                   </Link>

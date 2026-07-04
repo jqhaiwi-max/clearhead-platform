@@ -14,6 +14,7 @@ import Checkout from "@/pages/Checkout";
 import Appointments from "@/pages/Appointments";
 import Specialties from "@/pages/Specialties";
 import Intake from "@/pages/Intake";
+import BookingJourney from "@/pages/BookingJourney";
 import Pricing from "@/pages/Pricing";
 import Simulator from "@/pages/Simulator";
 import Contracts from "@/pages/Contracts";
@@ -25,7 +26,7 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 1000 * 60 * 2, retry: 1 } },
 });
 
-const FULL_SCREEN_ROUTES = ["/get-started", "/session"];
+const FULL_SCREEN_ROUTES = ["/get-started", "/session", "/book-now"];
 
 function Router() {
   const [location] = useLocation();
@@ -42,7 +43,8 @@ function Router() {
         <Route path="/checkout" component={Checkout} />
         <Route path="/appointments" component={Appointments} />
         <Route path="/specialties" component={Specialties} />
-        <Route path="/get-started" component={Intake} />
+        <Route path="/get-started" component={BookingJourney} />
+        <Route path="/book-now" component={BookingJourney} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/simulator" component={Simulator} />
         <Route path="/contracts" component={Contracts} />

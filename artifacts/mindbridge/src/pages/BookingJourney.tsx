@@ -1,0 +1,730 @@
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation, useSearch } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft, ArrowRight, Check, X, Star, Clock, Calendar,
+  ChevronLeft, ChevronRight, User, Mail, Tag, MessageCircle,
+  Copy, Shield, CheckCircle, Search, Zap, AlertCircle, Leaf,
+} from "lucide-react";
+import { useListProviders } from "@workspace/api-client-react";
+import {
+  COUNTRY_LIST, SESSION_DURATIONS, getSessionPrice,
+  PROMO_CODES, formatPrice, type CountryPricing,
+} from "@/lib/pricing";
+
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+
+const SERVICES = [
+  { id: "individual", label: "Individual Therapy", sub: "Personal sessions for adults 18+", emoji: "🌱" },
+  { id: "couples",    label: "Couples Counselling", sub: "Together or alone — your pace", emoji: "🌿" },
+  { id: "children",  label: "Children & Teens", sub: "Specialised support under 18", emoji: "🦋" },
+  { id: "psychiatric", label: "Psychiatric Consultation", sub: "Diagnosis, medication & management", emoji: "🧬" },
+];
+
+const CONDITIONS = [
+  { id: "anxiety",      label: "Anxiety & Panic", emoji: "💭" },
+  { id: "depression",   label: "Depression",       emoji: "🌧️" },
+  { id: "trauma",       label: "PTSD & Trauma",    emoji: "💔" },
+  { id: "ocd",          label: "OCD",              emoji: "🔄" },
+  { id: "adhd",         label: "ADHD",             emoji: "⚡" },
+  { id: "bipolar",      label: "Bipolar Disorder", emoji: "🌊" },
+  { id: "relationships",label: "Relationships",    emoji: "🤝" },
+  { id: "grief",        label: "Grief & Loss",     emoji: "🕊️" },
+  { id: "stress",       label: "Stress & Burnout", emoji: "🔥" },
+  { id: "sleep",        label: "Sleep Problems",   emoji: "😴" },
+  { id: "eating",       label: "Eating Disorders", emoji: "🍃" },
+  { id: "addiction",    label: "Addiction",        emoji: "🔗" },
+  { id: "self_esteem",  label: "Self-Esteem",      emoji: "🪞" },
+  { id: "life",         label: "Life Transitions", emoji: "🦋" },
+  { id: "general",      label: "General Wellness", emoji: "🌱" },
+  { id: "other",        label: "Something else",   emoji: "✨" },
+];
+
+const SPECIALTIES_FOR: Record<string, string> = {
+  couples: "Couples",
+  children: "Child",
+  psychiatric: "Psychiatry",
+};
+
+const STEPS = [
+  { id: "service",   label: "Service",  short: "Care type" },
+  { id: "focus",     label: "Focus",    short: "Your needs" },
+  { id: "country",   label: "Country",  short: "Location" },
+  { id: "provider",  label: "Provider", short: "Therapist" },
+  { id: "duration",  label: "Duration", short: "Length" },
+  { id: "date",      label: "Date",     short: "Calendar" },
+  { id: "time",      label: "Time",     short: "Slot" },
+  { id: "details",   label: "Details",  short: "Your info" },
+  { id: "review",    label: "Review",   short: "Confirm" },
+];
+
+type Provider = {
+  id: number; name: string; title: string; specialty: string;
+  bio: string; rating: number; reviewCount: number; yearsExperience: number;
+  imageUrl: string; available: boolean; sessionPrice: number;
+  languages?: string[] | null; acceptsInsurance: boolean; nextAvailable?: string | null;
+};
+
+const DAY_NAMES  = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const TIME_SLOTS = [
+  "09:00","09:30","10:00","10:30","11:00","11:30",
+  "13:00","13:30","14:00","14:30","15:00","15:30",
+  "16:00","16:30","17:00","17:30","18:00","19:00",
+];
+
+function CalendarGrid({ selected, onSelect }: { selected: string; onSelect: (d: string) => void }) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const [vy, setVy] = useState(today.getFullYear());
+  const [vm, setVm] = useState(today.getMonth());
+  const firstDay = new Date(vy, vm, 1).getDay();
+  const daysInMonth = new Date(vy, vm+1, 0).getDate();
+  const p = (n: number) => String(n).padStart(2,"0");
+  const val = (d: number) => `${vy}-${p(vm+1)}-${p(d)}`;
+  const maxDate = new Date(today); maxDate.setDate(today.getDate()+60);
+  const isPast = (d: number) => new Date(vy,vm,d) < today;
+  const isFar  = (d: number) => new Date(vy,vm,d) > maxDate;
+  const isToday= (d: number) => new Date(vy,vm,d).getTime()===today.getTime();
+  const prev = () => { if (vm===0){setVm(11);setVy(y=>y-1);}else setVm(m=>m-1); };
+  const next = () => { if (vm===11){setVm(0);setVy(y=>y+1);}else setVm(m=>m+1); };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={prev} className="p-2 rounded-xl hover:bg-muted transition-colors"><ChevronLeft className="w-4 h-4"/></button>
+        <span className="font-semibold text-foreground text-sm">{MONTH_NAMES[vm]} {vy}</span>
+        <button onClick={next} className="p-2 rounded-xl hover:bg-muted transition-colors"><ChevronRight className="w-4 h-4"/></button>
+      </div>
+      <div className="grid grid-cols-7 mb-1">
+        {DAY_NAMES.map(d=><div key={d} className="text-center text-[11px] font-semibold text-muted-foreground py-1">{d}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-y-0.5">
+        {Array.from({length:firstDay},(_,i)=><div key={`e${i}`}/>)}
+        {Array.from({length:daysInMonth},(_,i)=>{
+          const day=i+1, v=val(day), dis=isPast(day)||isFar(day), sel=v===selected, tod=isToday(day);
+          return (
+            <button key={day} disabled={dis} onClick={()=>!dis&&onSelect(v)}
+              className={`mx-auto w-9 h-9 rounded-full text-sm font-medium transition-all flex items-center justify-center
+                ${sel?"bg-primary text-white shadow-md":""}
+                ${!sel&&tod?"border-2 border-primary text-primary":""}
+                ${!sel&&!dis&&!tod?"hover:bg-primary/10 text-foreground":""}
+                ${dis?"text-muted-foreground/30 cursor-not-allowed":""}`}>
+              {day}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+async function fetchSlots(providerId: number, date: string): Promise<string[]> {
+  try {
+    const r = await fetch(`${BASE}/api/appointments/slots?providerId=${providerId}&date=${date}`);
+    return r.ok ? (await r.json()).bookedSlots ?? [] : [];
+  } catch { return []; }
+}
+
+async function bookAppointment(body: object) {
+  const r = await fetch(`${BASE}/api/appointments`, {
+    method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body),
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.error || "Booking failed"); }
+  return r.json();
+}
+
+function formatDateLong(str: string) {
+  if (!str) return "";
+  const [y,m,d] = str.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+}
+
+export default function BookingJourney() {
+  const [, navigate] = useLocation();
+  const search = useSearch();
+  const urlParams = new URLSearchParams(search);
+  const preloadProviderId = parseInt(urlParams.get("provider") || "0") || null;
+
+  const [step, setStep] = useState(0);
+  const [dir, setDir] = useState(1);
+
+  const [service,   setService  ] = useState("");
+  const [conditions,setConditions] = useState<string[]>([]);
+  const [country,   setCountry  ] = useState<CountryPricing>(COUNTRY_LIST.find(c=>c.code==="US")!);
+  const [provider,  setProvider ] = useState<Provider|null>(null);
+  const [duration,  setDuration ] = useState(60);
+  const [date,      setDate     ] = useState("");
+  const [time,      setTime     ] = useState("");
+  const [name,      setName     ] = useState("");
+  const [email,     setEmail    ] = useState("");
+  const [promoInput,setPromoInput] = useState("");
+  const [promo,     setPromo    ] = useState<{code:string;pct:number}|null>(null);
+  const [promoErr,  setPromoErr ] = useState("");
+  const [acceptTerms,setAcceptTerms] = useState(false);
+  const [bookedSlots,setBookedSlots] = useState<string[]>([]);
+  const [slotsLoading,setSlotsLoading] = useState(false);
+  const [loading,   setLoading  ] = useState(false);
+  const [bookErr,   setBookErr  ] = useState("");
+  const [done,      setDone     ] = useState(false);
+  const [apptId,    setApptId   ] = useState<number|null>(null);
+  const [copied,    setCopied   ] = useState(false);
+  const [provSearch,setProvSearch] = useState("");
+  const [countryQ,  setCountryQ ] = useState("");
+
+  const specFilter = SPECIALTIES_FOR[service] || undefined;
+  const { data: allProviders = [] } = useListProviders(
+    { available: true, ...(specFilter ? {specialty: specFilter} : {}) },
+    { query: { staleTime: 60000 } }
+  );
+
+  const providers = (allProviders as Provider[]).filter(p =>
+    !provSearch || p.name.toLowerCase().includes(provSearch.toLowerCase()) ||
+    p.specialty.toLowerCase().includes(provSearch.toLowerCase())
+  );
+
+  const baseUSD = provider?.sessionPrice ?? 50;
+  const { usd, local } = getSessionPrice(baseUSD, duration, country);
+  const discAmt = promo ? Math.round(local * promo.pct) : 0;
+  const total = local - discAmt;
+
+  useEffect(() => {
+    if (!date || !provider) return;
+    setSlotsLoading(true); setTime("");
+    fetchSlots(provider.id, date).then(s => { setBookedSlots(s); setSlotsLoading(false); });
+  }, [date, provider]);
+
+  useEffect(() => {
+    if (!preloadProviderId || allProviders.length === 0) return;
+    const found = (allProviders as Provider[]).find(p => p.id === preloadProviderId);
+    if (found) {
+      setProvider(found);
+      setService("individual");
+      setStep(4);
+    }
+  }, [preloadProviderId, allProviders]);
+
+  const go = (delta: number) => {
+    const next = step + delta;
+    if (next < 0 || next >= STEPS.length) return;
+    setDir(delta);
+    setStep(next);
+    window.scrollTo({top:0,behavior:"smooth"});
+  };
+
+  const canContinue = () => {
+    if (step===0) return !!service;
+    if (step===1) return conditions.length > 0;
+    if (step===2) return !!country;
+    if (step===3) return !!provider;
+    if (step===4) return !!duration;
+    if (step===5) return !!date;
+    if (step===6) return !!time;
+    if (step===7) return name.trim().length>=2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (step===8) return acceptTerms;
+    return true;
+  };
+
+  const applyPromo = () => {
+    const up = promoInput.trim().toUpperCase();
+    const pct = PROMO_CODES[up];
+    if (pct) { setPromo({code:up,pct}); setPromoErr(""); }
+    else { setPromo(null); setPromoErr("Invalid promo code"); }
+  };
+
+  const handleBook = async () => {
+    if (!provider || !date || !time) return;
+    setLoading(true); setBookErr("");
+    try {
+      const r = await bookAppointment({
+        patientName: name.trim(), patientEmail: email.trim(),
+        providerId: provider.id, date, time, type:"video",
+        notes: promo ? `Promo: ${promo.code}` : undefined,
+      });
+      setApptId(r.id); setDone(true);
+    } catch(e:any) { setBookErr(e.message); }
+    finally { setLoading(false); }
+  };
+
+  const waLink = () => {
+    if (!provider) return "#";
+    const msg = `I just booked a ${duration}-min session with ${provider.name} on ${formatDateLong(date)} at ${time}.\n\nBook your own at Clearhead:\nhttps://clearhead.app/get-started`;
+    return `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  };
+
+  const filteredCountries = COUNTRY_LIST.filter(c =>
+    !countryQ || c.name.toLowerCase().includes(countryQ.toLowerCase()) || c.currency.toLowerCase().includes(countryQ.toLowerCase())
+  );
+
+  const progress = (step / (STEPS.length - 1)) * 100;
+
+  const variants = {
+    enter: (d: number) => ({ x: d>0? 40 : -40, opacity:0 }),
+    center: { x:0, opacity:1 },
+    exit:  (d: number) => ({ x: d>0? -40 : 40, opacity:0 }),
+  };
+
+  if (done) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[hsl(158,40%,97%)] to-[hsl(188,30%,95%)] flex items-center justify-center px-4">
+        <motion.div initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} className="w-full max-w-md">
+          <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
+            <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type:"spring",delay:0.1}}
+              className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-5">
+              <CheckCircle className="w-10 h-10 text-emerald-600"/>
+            </motion.div>
+            <h2 className="font-serif text-2xl font-bold text-foreground mb-1">You're booked!</h2>
+            <p className="text-muted-foreground text-sm mb-5">A confirmation has been sent to <span className="font-medium">{email}</span></p>
+
+            <div className="bg-muted/40 rounded-2xl p-4 text-left space-y-2 text-sm mb-6">
+              <div className="flex justify-between"><span className="text-muted-foreground">Provider</span><span className="font-medium">{provider?.name}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{formatDateLong(date)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="font-medium">{time}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Duration</span><span className="font-medium">{duration} min</span></div>
+              <div className="flex justify-between border-t border-border pt-2 font-bold">
+                <span>Total paid</span><span className="text-primary">{formatPrice(total,country)}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <a href={waLink()} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-2xl bg-[#25D366] text-white font-semibold hover:brightness-105 transition-all shadow">
+                <MessageCircle className="w-5 h-5"/> Share via WhatsApp
+              </a>
+              <button onClick={()=>{navigator.clipboard.writeText(`https://clearhead.app/get-started`);setCopied(true);setTimeout(()=>setCopied(false),2000);}}
+                className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-2xl border-2 border-border font-semibold text-foreground hover:border-primary/40 transition-all">
+                {copied?<Check className="w-4 h-4 text-emerald-600"/>:<Copy className="w-4 h-4"/>}
+                {copied?"Copied!":"Copy Booking Link"}
+              </button>
+              <button onClick={()=>navigate("/appointments")}
+                className="w-full py-3.5 rounded-2xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
+                View My Sessions
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(158,40%,97%)] to-[hsl(188,30%,95%)] flex flex-col">
+      {/* Top bar */}
+      <div className="flex-shrink-0">
+        {/* Progress bar */}
+        <div className="h-1 bg-border/40 relative">
+          <motion.div className="absolute inset-y-0 left-0 bg-primary rounded-r-full"
+            animate={{width:`${progress}%`}} transition={{duration:0.4}}/>
+        </div>
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 text-primary font-bold text-lg tracking-tight">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+              <Leaf className="w-4 h-4 text-white"/>
+            </div>
+            Clearhead
+          </Link>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground font-medium">
+              Step {step+1} of {STEPS.length}
+            </span>
+            <div className="flex gap-1">
+              {STEPS.map((s,i)=>(
+                <div key={s.id} className={`rounded-full transition-all duration-300 ${i===step?"w-5 h-2 bg-primary":i<step?"w-2 h-2 bg-primary/50":"w-2 h-2 bg-border"}`}/>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Step content */}
+      <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-4 pb-8">
+        <AnimatePresence mode="wait" custom={dir}>
+          <motion.div key={step} custom={dir} variants={variants}
+            initial="enter" animate="center" exit="exit"
+            transition={{duration:0.28, ease:"easeOut"}}
+            className="flex-1 flex flex-col">
+
+            {/* Step card */}
+            <div className="flex-1 flex flex-col mt-4">
+
+              {/* ─── STEP 0: Service ─── */}
+              {step===0 && (
+                <StepShell title="What kind of care are you looking for?" subtitle="We'll match you with the right providers.">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {SERVICES.map(s=>(
+                      <button key={s.id} onClick={()=>setService(s.id)}
+                        className={`group flex items-center gap-4 p-5 rounded-2xl border-2 text-left transition-all hover:-translate-y-0.5 hover:shadow-md
+                          ${service===s.id?"border-primary bg-primary/5 shadow-md":"border-border bg-white hover:border-primary/40"}`}>
+                        <span className="text-3xl">{s.emoji}</span>
+                        <div>
+                          <div className={`font-semibold text-sm ${service===s.id?"text-primary":"text-foreground"}`}>{s.label}</div>
+                          <div className="text-xs text-muted-foreground mt-0.5">{s.sub}</div>
+                        </div>
+                        {service===s.id && <Check className="w-4 h-4 text-primary ml-auto flex-shrink-0"/>}
+                      </button>
+                    ))}
+                  </div>
+                </StepShell>
+              )}
+
+              {/* ─── STEP 1: Focus ─── */}
+              {step===1 && (
+                <StepShell title="What brings you here?" subtitle="Select all that apply — this helps us personalise your match.">
+                  <div className="flex flex-wrap gap-2">
+                    {CONDITIONS.map(c=>{
+                      const on = conditions.includes(c.id);
+                      return (
+                        <button key={c.id} onClick={()=>setConditions(prev=>on?prev.filter(x=>x!==c.id):[...prev,c.id])}
+                          className={`flex items-center gap-2 px-4 py-2.5 rounded-full border-2 text-sm font-medium transition-all
+                            ${on?"border-primary bg-primary text-white":"border-border bg-white hover:border-primary/40 text-foreground"}`}>
+                          <span>{c.emoji}</span>{c.label}
+                          {on&&<X className="w-3 h-3 ml-0.5 opacity-70"/>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {conditions.length>0 && (
+                    <p className="text-xs text-muted-foreground mt-4">{conditions.length} selected · You can update these later</p>
+                  )}
+                </StepShell>
+              )}
+
+              {/* ─── STEP 2: Country ─── */}
+              {step===2 && (
+                <StepShell title="Where are you based?" subtitle="Pricing adapts to your local currency.">
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
+                    <input value={countryQ} onChange={e=>setCountryQ(e.target.value)} placeholder="Search country…"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto space-y-1.5 rounded-2xl">
+                    {filteredCountries.map(c=>(
+                      <button key={c.code} onClick={()=>{setCountry(c);setCountryQ("");}}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all
+                          ${country.code===c.code?"border-primary bg-primary/5":"border-transparent bg-white hover:border-primary/30 hover:bg-white"}`}>
+                        <span className="text-2xl">{c.flag}</span>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm text-foreground">{c.name}</div>
+                          <div className="text-xs text-muted-foreground">{c.currency} · {c.region}</div>
+                        </div>
+                        {country.code===c.code && <Check className="w-4 h-4 text-primary flex-shrink-0"/>}
+                      </button>
+                    ))}
+                  </div>
+                </StepShell>
+              )}
+
+              {/* ─── STEP 3: Provider ─── */}
+              {step===3 && (
+                <StepShell title="Choose your therapist" subtitle="All providers are licensed & verified.">
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
+                    <input value={provSearch} onChange={e=>setProvSearch(e.target.value)} placeholder="Search by name or specialty…"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+                  </div>
+                  <div className="space-y-3 max-h-[420px] overflow-y-auto pr-0.5">
+                    {providers.length===0 && (
+                      <div className="text-center py-12 text-muted-foreground text-sm">No providers found. Try broadening your search.</div>
+                    )}
+                    {providers.map(p=>{
+                      const px = getSessionPrice(p.sessionPrice,60,country);
+                      const sel = provider?.id===p.id;
+                      return (
+                        <button key={p.id} onClick={()=>setProvider(p)}
+                          className={`w-full flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all hover:shadow-md hover:-translate-y-0.5
+                            ${sel?"border-primary bg-primary/5 shadow-md":"border-border bg-white hover:border-primary/30"}`}>
+                          <img src={p.imageUrl} alt={p.name} className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-muted"/>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <div className={`font-semibold text-sm ${sel?"text-primary":"text-foreground"}`}>{p.name}</div>
+                                <div className="text-xs text-muted-foreground">{p.title}</div>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <div className="text-sm font-bold text-primary">{formatPrice(px.local,country)}<span className="text-xs font-normal text-muted-foreground">/hr</span></div>
+                                {country.code!=="US"&&<div className="text-[10px] text-muted-foreground">≈${px.usd}</div>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              <div className="flex items-center gap-1 text-xs">
+                                <Star className="w-3 h-3 fill-amber-400 text-amber-400"/>{p.rating}
+                                <span className="text-muted-foreground">({p.reviewCount})</span>
+                              </div>
+                              <span className="text-muted-foreground">·</span>
+                              <span className="text-xs text-muted-foreground">{p.yearsExperience}y exp</span>
+                              <span className="text-muted-foreground">·</span>
+                              <span className="text-xs text-muted-foreground truncate max-w-28">{p.specialty}</span>
+                            </div>
+                            {p.languages && p.languages.length>0 && (
+                              <div className="flex gap-1 mt-2 flex-wrap">
+                                {p.languages.slice(0,3).map(l=>(
+                                  <span key={l} className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{l}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {sel && <Check className="w-4 h-4 text-primary flex-shrink-0 mt-1"/>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </StepShell>
+              )}
+
+              {/* ─── STEP 4: Duration ─── */}
+              {step===4 && (
+                <StepShell title="How long would you like your session?" subtitle="Longer sessions allow for deeper work.">
+                  <div className="grid grid-cols-3 gap-4">
+                    {SESSION_DURATIONS.map(d=>{
+                      const p = getSessionPrice(baseUSD, d.minutes, country);
+                      const sel = duration===d.minutes;
+                      return (
+                        <button key={d.minutes} onClick={()=>setDuration(d.minutes)}
+                          className={`flex flex-col items-center p-6 rounded-2xl border-2 transition-all hover:-translate-y-0.5 hover:shadow-md
+                            ${sel?"border-primary bg-primary/5 shadow-md":"border-border bg-white hover:border-primary/30"}`}>
+                          <div className={`text-4xl font-bold mb-1 ${sel?"text-primary":"text-foreground"}`}>{d.minutes}</div>
+                          <div className="text-xs text-muted-foreground mb-3">minutes</div>
+                          <div className={`font-semibold text-sm ${sel?"text-primary":"text-foreground"}`}>{formatPrice(p.local,country)}</div>
+                          {country.code!=="US"&&<div className="text-[10px] text-muted-foreground">≈${p.usd}</div>}
+                          {d.minutes===90&&<div className="text-[10px] text-emerald-600 font-semibold mt-1">Best value</div>}
+                          {sel&&<Check className="w-4 h-4 text-primary mt-2"/>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </StepShell>
+              )}
+
+              {/* ─── STEP 5: Date ─── */}
+              {step===5 && (
+                <StepShell title="Pick a date" subtitle="Sessions available within the next 60 days.">
+                  <div className="bg-white rounded-2xl border border-border p-5">
+                    <CalendarGrid selected={date} onSelect={d=>{setDate(d);}}/>
+                  </div>
+                  {date && (
+                    <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}
+                      className="mt-3 flex items-center gap-2 px-4 py-3 rounded-xl bg-primary/10 border border-primary/20">
+                      <Calendar className="w-4 h-4 text-primary flex-shrink-0"/>
+                      <span className="text-sm font-medium text-primary">{formatDateLong(date)}</span>
+                    </motion.div>
+                  )}
+                </StepShell>
+              )}
+
+              {/* ─── STEP 6: Time ─── */}
+              {step===6 && (
+                <StepShell
+                  title="Select a time slot"
+                  subtitle={date ? `Available slots for ${formatDateLong(date)}` : "Pick a date first"}>
+                  {slotsLoading ? (
+                    <div className="flex items-center justify-center gap-3 py-16 text-muted-foreground text-sm">
+                      <span className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"/>
+                      Checking availability…
+                    </div>
+                  ) : (
+                    <>
+                      {bookedSlots.length>0 && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 px-1">
+                          <div className="w-3 h-3 rounded border border-red-200 bg-red-50 flex items-center justify-center">
+                            <X className="w-2 h-2 text-red-400"/>
+                          </div>
+                          {bookedSlots.length} slot{bookedSlots.length>1?"s":""} unavailable for this date
+                        </div>
+                      )}
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                        {TIME_SLOTS.map(slot=>{
+                          const booked = bookedSlots.includes(slot);
+                          const sel = time===slot;
+                          return (
+                            <button key={slot} disabled={booked} onClick={()=>!booked&&setTime(slot)}
+                              className={`relative py-3 rounded-xl border-2 text-sm font-medium transition-all
+                                ${sel?"border-primary bg-primary text-white shadow-md":""}
+                                ${booked?"border-border bg-muted/30 text-muted-foreground/40 cursor-not-allowed":""}
+                                ${!booked&&!sel?"border-border bg-white hover:border-primary/40 text-foreground":""}`}>
+                              {booked ? (
+                                <span className="flex flex-col items-center gap-0.5">
+                                  <X className="w-3.5 h-3.5 text-red-400"/>
+                                  <span className="text-[9px] line-through">{slot}</span>
+                                </span>
+                              ) : slot}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </StepShell>
+              )}
+
+              {/* ─── STEP 7: Details ─── */}
+              {step===7 && (
+                <StepShell title="Your information" subtitle="Needed to confirm and send your booking.">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground block mb-1.5 flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5"/> Full name *
+                      </label>
+                      <input value={name} onChange={e=>setName(e.target.value)} placeholder="Your full name"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-colors"/>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground block mb-1.5 flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5"/> Email address *
+                      </label>
+                      <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary transition-colors"/>
+                    </div>
+
+                    <div className="pt-2 border-t border-border">
+                      <label className="text-xs font-semibold text-muted-foreground block mb-1.5 flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5"/> Promo code <span className="font-normal">(optional)</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <input value={promoInput} onChange={e=>{setPromoInput(e.target.value.toUpperCase());setPromoErr("");}}
+                          placeholder="e.g. CLEAR20"
+                          className="flex-1 px-4 py-3 rounded-xl border-2 border-input bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary"/>
+                        <button onClick={applyPromo}
+                          className="px-5 py-3 rounded-xl bg-primary text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+                          Apply
+                        </button>
+                      </div>
+                      {promoErr && <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5"/>{promoErr}</p>}
+                      {promo && <p className="text-emerald-600 text-xs mt-1.5 flex items-center gap-1"><Check className="w-3.5 h-3.5"/><b>{promo.code}</b> — {Math.round(promo.pct*100)}% discount applied</p>}
+                    </div>
+                  </div>
+                </StepShell>
+              )}
+
+              {/* ─── STEP 8: Review & Confirm ─── */}
+              {step===8 && (
+                <StepShell title="Review & confirm" subtitle="Everything looks good? Lock in your session.">
+                  <div className="space-y-4">
+                    {/* Provider */}
+                    {provider && (
+                      <div className="bg-white border border-border rounded-2xl p-4 flex items-center gap-3">
+                        <img src={provider.imageUrl} alt={provider.name} className="w-12 h-12 rounded-xl object-cover bg-muted"/>
+                        <div className="flex-1">
+                          <div className="font-semibold text-sm text-foreground">{provider.name}</div>
+                          <div className="text-xs text-muted-foreground">{provider.title}</div>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-amber-500 font-medium">
+                          <Star className="w-3.5 h-3.5 fill-amber-400"/>{provider.rating}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Session details */}
+                    <div className="bg-white border border-border rounded-2xl p-4 space-y-2.5 text-sm">
+                      <Row label="Service"  value={SERVICES.find(s=>s.id===service)?.label ?? ""}/>
+                      <Row label="Date"     value={formatDateLong(date)}/>
+                      <Row label="Time"     value={time}/>
+                      <Row label="Duration" value={`${duration} minutes`}/>
+                      <Row label="Format"   value="Video call"/>
+                      <Row label="Country"  value={`${country.flag} ${country.name}`}/>
+                      <div className="border-t border-border pt-2.5">
+                        <Row label="Session fee" value={formatPrice(local, country)}/>
+                        {promo && <Row label={`Promo (${promo.code})`} value={`−${formatPrice(discAmt,country)}`} className="text-emerald-600"/>}
+                        <div className="flex justify-between font-bold text-foreground mt-1">
+                          <span>Total</span>
+                          <span className="text-primary text-base">{formatPrice(total,country)}</span>
+                        </div>
+                        {country.code!=="US" && <p className="text-right text-xs text-muted-foreground mt-0.5">≈ ${usd} USD</p>}
+                      </div>
+                    </div>
+
+                    {/* T&C */}
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <div onClick={()=>setAcceptTerms(v=>!v)}
+                        className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all
+                          ${acceptTerms?"border-primary bg-primary":"border-input group-hover:border-primary/50"}`}>
+                        {acceptTerms && <Check className="w-3 h-3 text-white"/>}
+                      </div>
+                      <span className="text-xs text-foreground/70 leading-relaxed">
+                        I accept the{" "}
+                        <a href="/contracts" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Terms of Service</a>
+                        {" & "}
+                        <a href="/contracts" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Privacy Policy</a>
+                        . I understand Clearhead is not a crisis service.
+                      </span>
+                    </label>
+
+                    {bookErr && (
+                      <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0"/>{bookErr}
+                      </div>
+                    )}
+
+                    <button onClick={handleBook} disabled={!acceptTerms||loading}
+                      className={`w-full py-4 rounded-2xl font-semibold text-sm transition-all
+                        ${acceptTerms?"bg-primary text-white hover:opacity-90 hover:-translate-y-0.5 shadow-lg":"bg-muted text-muted-foreground cursor-not-allowed"}`}>
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                          Confirming your booking…
+                        </span>
+                      ) : "Confirm & Book Session →"}
+                    </button>
+
+                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <Shield className="w-3.5 h-3.5 text-primary"/>
+                      HIPAA-compliant · End-to-end encrypted · Free cancellation up to 24h
+                    </div>
+                  </div>
+                </StepShell>
+              )}
+
+            </div>
+
+            {/* Navigation */}
+            {step < 8 && (
+              <div className="flex items-center gap-3 mt-6 pb-2">
+                {step > 0 ? (
+                  <button onClick={()=>go(-1)}
+                    className="flex items-center gap-2 px-5 py-3 rounded-xl border-2 border-border bg-white text-foreground font-semibold text-sm hover:border-primary/40 transition-all">
+                    <ArrowLeft className="w-4 h-4"/> Back
+                  </button>
+                ) : (
+                  <Link href="/" className="flex items-center gap-2 px-5 py-3 rounded-xl border-2 border-border bg-white text-foreground font-semibold text-sm hover:border-primary/40 transition-all">
+                    <ArrowLeft className="w-4 h-4"/> Home
+                  </Link>
+                )}
+                <button onClick={()=>go(1)} disabled={!canContinue()}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all
+                    ${canContinue()?"bg-primary text-white hover:opacity-90 hover:-translate-y-0.5 shadow-md":"bg-muted text-muted-foreground cursor-not-allowed"}`}>
+                  {step===7 ? "Review booking" : "Continue"}
+                  {canContinue() && <ArrowRight className="w-4 h-4"/>}
+                </button>
+              </div>
+            )}
+            {step===8 && (
+              <button onClick={()=>go(-1)}
+                className="flex items-center gap-2 mt-4 px-5 py-3 rounded-xl border-2 border-border bg-white text-foreground font-semibold text-sm hover:border-primary/40 transition-all self-start">
+                <ArrowLeft className="w-4 h-4"/> Edit details
+              </button>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function StepShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-foreground mb-1.5 leading-tight">{title}</h2>
+        <p className="text-muted-foreground text-sm">{subtitle}</p>
+      </div>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function Row({ label, value, className="" }: { label: string; value: string; className?: string }) {
+  return (
+    <div className={`flex justify-between text-sm ${className}`}>
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-medium ${className||"text-foreground"}`}>{value}</span>
+    </div>
+  );
+}
