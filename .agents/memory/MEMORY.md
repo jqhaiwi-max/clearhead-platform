@@ -1,0 +1,2 @@
+- [API Server validation pattern](api-server-validation.md) — use manual validation or @workspace/api-zod; never import zod directly (not installed in api-server)
+- [DB seeding approach](db-seeding.md) — seed providers via `psql "$DATABASE_URL"` heredoc; tsx scripts fail (no drizzle-orm in scripts package)

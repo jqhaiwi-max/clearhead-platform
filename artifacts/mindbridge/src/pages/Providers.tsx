@@ -1,23 +1,77 @@
 import { useState } from "react";
 import { Link, useSearch } from "wouter";
 import { motion } from "framer-motion";
-import { Search, Star, Filter, CheckCircle } from "lucide-react";
+import { Search, Star, Filter, CheckCircle, Globe, ChevronDown } from "lucide-react";
 import { useListProviders } from "@workspace/api-client-react";
+import { useCountry } from "@/context/CountryContext";
+import { COUNTRY_LIST, type CountryPricing } from "@/lib/pricing";
 
 const specialtyOptions = [
   "All Specialties", "Anxiety & Stress", "Depression", "PTSD & Trauma", "ADHD",
   "Bipolar Disorder", "OCD", "Grief & Loss", "Addiction & Recovery",
+  "Couples & Relationships", "Child & Adolescent", "Psychiatry",
 ];
+
+function CurrencyTag({ price, country }: { price: number; country: CountryPricing }) {
+  const local = Math.round(price * country.usdRate);
+  return (
+    <div className="text-right">
+      <div className="font-bold text-foreground">
+        {country.symbol}{local.toLocaleString()}
+        <span className="text-xs font-normal text-muted-foreground ml-0.5">/{country.currency}</span>
+      </div>
+      {country.code !== "US" && (
+        <div className="text-xs text-muted-foreground">≈ ${price} USD</div>
+      )}
+    </div>
+  );
+}
+
+function CountryPicker({ value, onChange }: { value: CountryPricing; onChange: (c: CountryPricing) => void }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const filtered = COUNTRY_LIST.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-input bg-background text-sm hover:border-primary/40 transition-colors">
+        <Globe className="w-4 h-4 text-primary" />
+        <span className="font-medium text-foreground">{value.flag} {value.name}</span>
+        <span className="text-muted-foreground text-xs">{value.symbol}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute z-50 mt-1 w-64 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-border">
+            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search country..."
+              className="w-full px-3 py-2 text-sm bg-muted/40 rounded-lg outline-none" />
+          </div>
+          <div className="max-h-52 overflow-y-auto">
+            {filtered.map((c) => (
+              <button key={c.code} onClick={() => { onChange(c); setOpen(false); setQ(""); }}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left hover:bg-muted/50 transition-colors ${value.code === c.code ? "text-primary font-semibold" : "text-foreground"}`}>
+                <span>{c.flag}</span><span>{c.name}</span>
+                <span className="ml-auto text-muted-foreground text-xs">{c.symbol}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Providers() {
   const search = useSearch();
   const params = new URLSearchParams(search);
   const initialSpecialty = params.get("specialty") || "";
+  const initialGender = params.get("gender") || "";
 
+  const { country, setCountry } = useCountry();
   const [searchTerm, setSearchTerm] = useState("");
   const [specialty, setSpecialty] = useState(initialSpecialty);
   const [availableOnly, setAvailableOnly] = useState(false);
-  const [insuranceOnly, setInsuranceOnly] = useState(false);
+  const [genderFilter, setGenderFilter] = useState(initialGender);
 
   const queryParams = {
     ...(searchTerm ? { search: searchTerm } : {}),
@@ -28,76 +82,61 @@ export default function Providers() {
   const { data: providers, isLoading } = useListProviders(queryParams);
 
   const filtered = (providers ?? []).filter((p) =>
-    insuranceOnly ? p.acceptsInsurance : true
+    genderFilter ? p.title?.toLowerCase().includes(genderFilter.toLowerCase()) : true
   );
 
   return (
     <div className="min-h-screen pt-24 pb-20 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-10"
-        >
-          <h1 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-3">Find a Provider</h1>
-          <p className="text-muted-foreground text-lg">Browse our network of board-certified psychiatrists and therapists.</p>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="mb-10">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-3">Find a Provider</h1>
+              <p className="text-muted-foreground text-lg">Board-certified specialists matched to your needs, priced in your local currency.</p>
+            </div>
+            <div className="flex items-center gap-2 bg-card border border-border rounded-2xl px-4 py-2.5">
+              <Globe className="w-4 h-4 text-primary" />
+              <span className="text-sm text-muted-foreground">Prices in:</span>
+              <CountryPicker value={country} onChange={setCountry} />
+            </div>
+          </div>
+
+          {initialSpecialty && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
+              <CheckCircle className="w-4 h-4" />
+              Showing providers specialising in: <strong>{initialSpecialty}</strong>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-card border border-border rounded-2xl p-5 mb-8 flex flex-col md:flex-row gap-4"
-        >
-          <div className="flex-1 relative">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
+          className="bg-card border border-border rounded-2xl p-5 mb-8 flex flex-col md:flex-row gap-4 flex-wrap">
+          <div className="flex-1 min-w-48 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="search"
-              placeholder="Search by name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            <input type="search" placeholder="Search by name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
-          <select
-            value={specialty}
-            onChange={(e) => setSpecialty(e.target.value)}
-            className="px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring md:w-52"
-          >
-            {specialtyOptions.map((s) => (
-              <option key={s} value={s === "All Specialties" ? "" : s}>{s}</option>
-            ))}
+          <select value={specialty} onChange={(e) => setSpecialty(e.target.value)}
+            className="px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring md:w-52">
+            {specialtyOptions.map((s) => <option key={s} value={s === "All Specialties" ? "" : s}>{s}</option>)}
           </select>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-foreground/80">
-              <input
-                type="checkbox"
-                checked={availableOnly}
-                onChange={(e) => setAvailableOnly(e.target.checked)}
-                className="rounded border-input"
-              />
-              Available now
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-foreground/80">
-              <input
-                type="checkbox"
-                checked={insuranceOnly}
-                onChange={(e) => setInsuranceOnly(e.target.checked)}
-                className="rounded border-input"
-              />
-              Accepts insurance
-            </label>
-          </div>
+          <select value={genderFilter} onChange={(e) => setGenderFilter(e.target.value)}
+            className="px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring md:w-44">
+            <option value="">Any gender</option>
+            <option value="male">Male providers</option>
+            <option value="female">Female providers</option>
+          </select>
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-foreground/80">
+            <input type="checkbox" checked={availableOnly} onChange={(e) => setAvailableOnly(e.target.checked)} className="rounded border-input" />
+            Available now
+          </label>
         </motion.div>
 
         {/* Results */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-72 rounded-2xl bg-muted animate-pulse" />
-            ))}
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-72 rounded-2xl bg-muted animate-pulse" />)}
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
@@ -108,36 +147,25 @@ export default function Providers() {
         ) : (
           <>
             <p className="text-sm text-muted-foreground mb-6">
-              {filtered.length} provider{filtered.length !== 1 ? "s" : ""} found
+              {filtered.length} provider{filtered.length !== 1 ? "s" : ""} found · Prices shown in {country.flag} {country.currency}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map((p, i) => (
-                <motion.div
-                  key={p.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.06 }}
-                >
+                <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: i * 0.05 }}>
                   <Link href={`/providers/${p.id}`} className="group block h-full">
                     <div className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
                       <div className="relative h-52 overflow-hidden bg-muted">
-                        <img
-                          src={p.imageUrl}
-                          alt={p.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
+                        <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         {p.available ? (
-                          <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/90 backdrop-blur-sm text-white text-xs font-medium">
+                          <div className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/90 backdrop-blur-sm text-white text-xs font-medium">
                             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Available
                           </div>
                         ) : (
-                          <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-medium">
-                            Waitlisted
-                          </div>
+                          <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/50 backdrop-blur-sm text-white text-xs font-medium">Waitlisted</div>
                         )}
                         {p.acceptsInsurance && (
                           <div className="absolute bottom-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 text-foreground text-xs font-medium">
-                            <CheckCircle className="w-3 h-3 text-green-600" /> Insurance
+                            <CheckCircle className="w-3 h-3 text-emerald-600" /> Insurance
                           </div>
                         )}
                       </div>
@@ -150,23 +178,19 @@ export default function Providers() {
                           <div className="flex items-center gap-1 bg-muted rounded-lg px-2 py-1 flex-shrink-0 ml-2">
                             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                             <span className="text-sm font-semibold">{p.rating}</span>
+                            <span className="text-xs text-muted-foreground">({p.reviewCount})</span>
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-2 mb-3">
                           <span className="text-xs px-2.5 py-1 rounded-full bg-accent text-accent-foreground font-medium">{p.specialty}</span>
                           <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground">{p.yearsExperience}y exp.</span>
                           {p.languages && p.languages.length > 1 && (
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground">{p.languages.length} languages</span>
+                            <span className="text-xs px-2.5 py-1 rounded-full bg-muted text-muted-foreground">{p.languages.join(", ")}</span>
                           )}
                         </div>
                         <div className="mt-auto pt-3 border-t border-border flex items-center justify-between">
-                          <div>
-                            <span className="font-semibold text-foreground">${p.sessionPrice}</span>
-                            <span className="text-xs text-muted-foreground">/session</span>
-                          </div>
-                          {p.nextAvailable && (
-                            <span className="text-xs text-muted-foreground">Next: {p.nextAvailable}</span>
-                          )}
+                          <CurrencyTag price={p.sessionPrice} country={country} />
+                          {p.nextAvailable && <span className="text-xs text-muted-foreground">Next: {p.nextAvailable}</span>}
                         </div>
                       </div>
                     </div>

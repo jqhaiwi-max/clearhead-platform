@@ -47,7 +47,21 @@ function FollowUp({ providerName, onDone }: { providerName: string; onDone: () =
     { label: "Need more support", emoji: "💙", val: "need_more" },
   ];
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    try {
+      await fetch(`${import.meta.env.BASE_URL}api/ratings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          providerId: 1,
+          patientName: "Anonymous",
+          rating,
+          mood: mood || undefined,
+          notes: notes || undefined,
+          sessionDate: new Date().toLocaleDateString(),
+        }),
+      });
+    } catch {}
     setSubmitted(true);
     setTimeout(onDone, 2500);
   };

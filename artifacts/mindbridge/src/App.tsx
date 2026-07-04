@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CountryProvider } from "@/context/CountryContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Landing from "@/pages/Landing";
@@ -18,12 +19,7 @@ import Session from "@/pages/Session";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 2,
-      retry: 1,
-    },
-  },
+  defaultOptions: { queries: { staleTime: 1000 * 60 * 2, retry: 1 } },
 });
 
 const FULL_SCREEN_ROUTES = ["/get-started", "/session"];
@@ -38,9 +34,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/providers" component={Providers} />
-        <Route path="/providers/:id">
-          {(params) => <ProviderDetail id={params.id} />}
-        </Route>
+        <Route path="/providers/:id">{(params) => <ProviderDetail id={params.id} />}</Route>
         <Route path="/book" component={Book} />
         <Route path="/appointments" component={Appointments} />
         <Route path="/specialties" component={Specialties} />
@@ -60,9 +54,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <CountryProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+        </CountryProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

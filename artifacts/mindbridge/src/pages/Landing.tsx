@@ -48,11 +48,11 @@ export default function Landing() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[hsl(188,73%,8%)] via-[hsl(188,60%,14%)] to-[hsl(200,50%,18%)]">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[hsl(188,60%,40%)] blur-3xl" />
-          <div className="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full bg-[hsl(140,40%,40%)] blur-3xl" />
-          <div className="absolute top-1/2 right-1/3 w-64 h-64 rounded-full bg-[hsl(40,60%,60%)] blur-3xl" />
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[hsl(158,55%,8%)] via-[hsl(158,48%,14%)] to-[hsl(165,42%,20%)]">
+        <div className="absolute inset-0 opacity-25">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-[hsl(158,60%,35%)] blur-3xl" />
+          <div className="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full bg-[hsl(200,60%,45%)] blur-3xl" />
+          <div className="absolute top-1/2 right-1/3 w-64 h-64 rounded-full bg-[hsl(38,85%,55%)] blur-3xl" />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 text-center">
           <motion.div
