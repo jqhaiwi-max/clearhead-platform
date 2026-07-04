@@ -11,6 +11,10 @@ import Book from "@/pages/Book";
 import Appointments from "@/pages/Appointments";
 import Specialties from "@/pages/Specialties";
 import Intake from "@/pages/Intake";
+import Pricing from "@/pages/Pricing";
+import Simulator from "@/pages/Simulator";
+import Contracts from "@/pages/Contracts";
+import Session from "@/pages/Session";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -22,7 +26,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const FULL_SCREEN_ROUTES = ["/get-started"];
+const FULL_SCREEN_ROUTES = ["/get-started", "/session"];
 
 function Router() {
   const [location] = useLocation();
@@ -41,6 +45,10 @@ function Router() {
         <Route path="/appointments" component={Appointments} />
         <Route path="/specialties" component={Specialties} />
         <Route path="/get-started" component={Intake} />
+        <Route path="/pricing" component={Pricing} />
+        <Route path="/simulator" component={Simulator} />
+        <Route path="/contracts" component={Contracts} />
+        <Route path="/session" component={Session} />
         <Route component={NotFound} />
       </Switch>
       {!isFullScreen && <Footer />}
