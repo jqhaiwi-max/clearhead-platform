@@ -81,7 +81,7 @@ export default function Landing() {
             transition={{ duration: 0.7, delay: 0.25 }}
             className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            Connect with board-certified psychiatrists and therapists who truly listen. Evidence-based treatment for anxiety, depression, ADHD, PTSD, and more — from the comfort of home.
+            Connect with board-certified psychiatrists and therapists who truly listen. Evidence-based treatment for anxiety, depression, ADHD, PTSD, and more — from the comfort of home, in your language.
           </motion.p>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -203,7 +203,7 @@ export default function Landing() {
             <FadeIn className="flex flex-col md:flex-row items-start md:items-end justify-between mb-14 gap-4">
               <div>
                 <h2 className="font-serif text-4xl font-bold text-foreground mb-3">Meet our specialists</h2>
-                <p className="text-muted-foreground text-lg max-w-lg">All providers are board-certified and background-verified before joining MindBridge.</p>
+                <p className="text-muted-foreground text-lg max-w-lg">All providers are board-certified and background-verified before joining Clearhead.</p>
               </div>
               <Link href="/providers" className="inline-flex items-center gap-2 text-primary font-semibold whitespace-nowrap hover:gap-3 transition-all duration-200">
                 Browse all <ArrowRight className="w-4 h-4" />
@@ -259,7 +259,7 @@ export default function Landing() {
       <section className="py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeIn className="text-center mb-16">
-            <h2 className="font-serif text-4xl font-bold text-foreground mb-4">How MindBridge works</h2>
+            <h2 className="font-serif text-4xl font-bold text-foreground mb-4">How Clearhead works</h2>
             <p className="text-muted-foreground text-lg max-w-lg mx-auto">Getting started takes less than 5 minutes.</p>
           </FadeIn>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">

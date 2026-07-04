@@ -15,7 +15,7 @@ export default function Footer() {
                   <path d="M9 12.5C9 11.1 10.1 10 11.5 10C12.9 10 14 11.1 14 12.5C14 13.9 12.9 15 11.5 15C10.1 15 9 13.9 9 12.5Z" fill="currentColor"/>
                 </svg>
               </div>
-              <span className="font-serif font-bold text-xl text-white">MindBridge</span>
+              <span className="font-serif font-bold text-xl text-white">Clearhead</span>
             </div>
             <p className="text-white/60 text-sm leading-relaxed mb-6">
               Board-certified psychiatric care, wherever you are in the world. Compassionate, discreet, and on your schedule.
@@ -79,7 +79,7 @@ export default function Footer() {
 
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-white/40">
-            2024 MindBridge Health Inc. All rights reserved.
+            2024 Clearhead Health Inc. All rights reserved.
           </p>
           <p className="text-sm text-white/40">
             Not for emergency services. If you are in crisis, call 911 or 988.

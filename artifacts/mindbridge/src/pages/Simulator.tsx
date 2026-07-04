@@ -208,7 +208,7 @@ export default function Simulator() {
                   <DonutChart slices={donutSlices} />
                   <div className="flex-1 space-y-3">
                     {[
-                      { label: "MindBridge Platform", pct: platformFee, local: platformLocal, usd: platformUSD, color: "bg-primary", icon: Building2 },
+                      { label: "Clearhead Platform", pct: platformFee, local: platformLocal, usd: platformUSD, color: "bg-primary", icon: Building2 },
                       ...(hasIntermediary ? [{ label: "Intermediary / Referral", pct: effectiveIntermediary, local: intermediaryLocal, usd: intermediaryUSD, color: "bg-amber-400", icon: Users }] : []),
                       { label: "Provider Earnings", pct: providerPct, local: providerLocal, usd: providerUSD, color: "bg-green-500", icon: Users },
                     ].map((item) => (

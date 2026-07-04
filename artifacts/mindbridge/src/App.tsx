@@ -3,12 +3,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CountryProvider } from "@/context/CountryContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Landing from "@/pages/Landing";
 import Providers from "@/pages/Providers";
 import ProviderDetail from "@/pages/ProviderDetail";
 import Book from "@/pages/Book";
+import Checkout from "@/pages/Checkout";
 import Appointments from "@/pages/Appointments";
 import Specialties from "@/pages/Specialties";
 import Intake from "@/pages/Intake";
@@ -16,6 +18,7 @@ import Pricing from "@/pages/Pricing";
 import Simulator from "@/pages/Simulator";
 import Contracts from "@/pages/Contracts";
 import Session from "@/pages/Session";
+import AddDoctor from "@/pages/AddDoctor";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -36,6 +39,7 @@ function Router() {
         <Route path="/providers" component={Providers} />
         <Route path="/providers/:id">{(params) => <ProviderDetail id={params.id} />}</Route>
         <Route path="/book" component={Book} />
+        <Route path="/checkout" component={Checkout} />
         <Route path="/appointments" component={Appointments} />
         <Route path="/specialties" component={Specialties} />
         <Route path="/get-started" component={Intake} />
@@ -43,6 +47,7 @@ function Router() {
         <Route path="/simulator" component={Simulator} />
         <Route path="/contracts" component={Contracts} />
         <Route path="/session" component={Session} />
+        <Route path="/add-doctor" component={AddDoctor} />
         <Route component={NotFound} />
       </Switch>
       {!isFullScreen && <Footer />}
@@ -54,11 +59,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <CountryProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-        </CountryProvider>
+        <LanguageProvider>
+          <CountryProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+          </CountryProvider>
+        </LanguageProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

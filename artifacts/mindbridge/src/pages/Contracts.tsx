@@ -23,11 +23,11 @@ const CLAUSES: Clause[] = [
     id: "1",
     title: "1. Parties & Definitions",
     icon: BookOpen,
-    content: (c) => `This Telehealth Services Agreement ("Agreement") is entered into between MindBridge Digital Health Platform ("Platform", "we", "us"), and the individual or entity accessing the platform's services ("Patient", "User", "you"), effective as of the date of account registration.
+    content: (c) => `This Telehealth Services Agreement ("Agreement") is entered into between Clearhead Digital Health Platform ("Platform", "we", "us"), and the individual or entity accessing the platform's services ("Patient", "User", "you"), effective as of the date of account registration.
 
 "Provider" means a licensed mental health professional listed on the Platform operating under the laws of ${c.name}.
 "Session" means a scheduled real-time clinical consultation via video, voice, or text.
-"Services" means the telehealth matching, scheduling, and communication technology provided by MindBridge.
+"Services" means the telehealth matching, scheduling, and communication technology provided by Clearhead.
 "Region" means ${c.name} and, where applicable, ${c.region}.`,
   },
   {
@@ -36,7 +36,7 @@ const CLAUSES: Clause[] = [
     icon: Scale,
     content: (c) => `This Agreement is governed by the laws of ${c.name}. Any dispute arising out of or related to this Agreement shall be subject to the exclusive jurisdiction of the competent courts of ${c.name}.
 
-Data protection and privacy obligations are governed by ${c.legalFramework}. MindBridge processes personal data in accordance with all applicable data protection legislation in ${c.region}.
+Data protection and privacy obligations are governed by ${c.legalFramework}. Clearhead processes personal data in accordance with all applicable data protection legislation in ${c.region}.
 
 Users in ${c.name} acknowledge that mental health services provided through the Platform are supplementary and do not replace in-person emergency psychiatric care where required by local health regulations.`,
   },
@@ -44,20 +44,20 @@ Users in ${c.name} acknowledge that mental health services provided through the 
     id: "3",
     title: "3. Data Protection & Privacy",
     icon: Shield,
-    content: (c) => `MindBridge processes your personal health information in full compliance with ${c.legalFramework}.
+    content: (c) => `Clearhead processes your personal health information in full compliance with ${c.legalFramework}.
 
-3.1 Data Controller: MindBridge Digital Health Platform acts as data controller for all personal data collected during Platform use.
+3.1 Data Controller: Clearhead Digital Health Platform acts as data controller for all personal data collected during Platform use.
 3.2 Lawful Basis: Processing is based on explicit consent (provided at registration) and legitimate interest in delivering clinical services.
 3.3 Data Categories: We process identity data, contact details, session content (encrypted), payment information (tokenised), and clinical intake responses.
 3.4 Retention: Clinical session records are retained for a minimum of 7 years from last session date in compliance with health records requirements under ${c.legalFramework}.
-3.5 Cross-Border Transfers: Where data is transferred outside ${c.name}, MindBridge applies Standard Contractual Clauses (SCCs) or equivalent approved transfer mechanisms.
+3.5 Cross-Border Transfers: Where data is transferred outside ${c.name}, Clearhead applies Standard Contractual Clauses (SCCs) or equivalent approved transfer mechanisms.
 3.6 Your Rights: You have the right to access, rectify, erase, restrict processing, and data portability. Requests may be directed to privacy@mindbridge.health within 30 days of receipt.`,
   },
   {
     id: "4",
     title: "4. Clinical Scope & Limitations",
     icon: AlertTriangle,
-    content: (c) => `4.1 The Platform provides technology to connect patients with licensed therapists and psychiatrists. MindBridge does not itself provide medical or psychiatric diagnosis, treatment, or advice.
+    content: (c) => `4.1 The Platform provides technology to connect patients with licensed therapists and psychiatrists. Clearhead does not itself provide medical or psychiatric diagnosis, treatment, or advice.
 
 4.2 Providers listed in ${c.name} hold valid licensure under the applicable regulatory body for ${c.region}. Users may request proof of credentials at any time.
 
@@ -76,21 +76,21 @@ ${c.code === "JO" ? "Jordan Emergency: 911 / Psychiatric Emergency: 110" : c.cod
 
 5.3 Late Start: If a Provider is more than 10 minutes late without prior notice, the Patient is entitled to a full session rebook or credit.
 
-5.4 No-Show Policy: Patients who miss a session without 24-hour cancellation notice forfeit that session credit. Providers who miss without 4-hour notice must reschedule at no charge and MindBridge will issue a platform credit.
+5.4 No-Show Policy: Patients who miss a session without 24-hour cancellation notice forfeit that session credit. Providers who miss without 4-hour notice must reschedule at no charge and Clearhead will issue a platform credit.
 
-5.5 Recording: Sessions shall not be recorded by either party without explicit written consent. MindBridge does not record sessions. AI-generated session notes (where opted in) are encrypted and accessible only to the Provider and Patient.`,
+5.5 Recording: Sessions shall not be recorded by either party without explicit written consent. Clearhead does not record sessions. AI-generated session notes (where opted in) are encrypted and accessible only to the Provider and Patient.`,
   },
   {
     id: "6",
     title: "6. Pricing, Fees & Taxation",
     icon: FileText,
-    content: (c) => `6.1 All prices are displayed in ${c.currency} and are subject to ${c.taxRate > 0 ? `${Math.round(c.taxRate * 100)}% ${c.taxNote}` : "no applicable consumption tax"}.
+    content: (c) => `6.1 All prices are displayed in ${c.currency} and are subject to applicable local taxes and levies as required by ${c.legalSystem}.
 
 6.2 The Platform charges a service fee of 15–25% of the session price as a technology and matching fee. This is deducted automatically before Provider payout.
 
 6.3 Intermediary or referral partners operating in ${c.name} are separately contracted and receive a commission of up to 15% of the net session fee, disclosed transparently in each booking summary.
 
-6.4 Payments are processed via certified PCI-DSS Level 1 payment processors. MindBridge does not store raw card data.
+6.4 Payments are processed via certified PCI-DSS Level 1 payment processors. Clearhead does not store raw card data.
 
 6.5 Subscription plans are billed monthly or annually in advance. Annual plans carry a 20% discount. Refunds are processed within 7–10 business days for unused sessions cancelled within 48 hours.
 
@@ -100,7 +100,7 @@ ${c.code === "JO" ? "Jordan Emergency: 911 / Psychiatric Emergency: 110" : c.cod
     id: "7",
     title: "7. Provider Agreement & Revenue Share",
     icon: FileText,
-    content: (c) => `7.1 Providers operating through MindBridge in ${c.name} enter into a separate Provider Services Agreement governing credentialing, insurance, and earnings.
+    content: (c) => `7.1 Providers operating through Clearhead in ${c.name} enter into a separate Provider Services Agreement governing credentialing, insurance, and earnings.
 
 7.2 Revenue Distribution: For each completed session, the Provider receives a minimum of 60% of the session fee after Platform deductions. The exact percentage is specified in the Provider's individual contract and the Revenue Simulator available in the Platform dashboard.
 
@@ -114,7 +114,7 @@ ${c.code === "JO" ? "Jordan Emergency: 911 / Psychiatric Emergency: 110" : c.cod
     id: "8",
     title: "8. Confidentiality & Therapeutic Privilege",
     icon: Shield,
-    content: (c) => `8.1 All communications between Patient and Provider are strictly confidential. Neither MindBridge nor the Provider will disclose session content to any third party without Patient consent, except where:
+    content: (c) => `8.1 All communications between Patient and Provider are strictly confidential. Neither Clearhead nor the Provider will disclose session content to any third party without Patient consent, except where:
     (a) Disclosure is required by law in ${c.name};
     (b) There is credible risk of harm to the Patient or a third party;
     (c) A court order or regulatory authority requires disclosure.
@@ -127,7 +127,7 @@ ${c.code === "JO" ? "Jordan Emergency: 911 / Psychiatric Emergency: 110" : c.cod
     id: "9",
     title: "9. Intellectual Property",
     icon: FileText,
-    content: (_c) => `9.1 All proprietary technology, algorithms, matching systems, content, and branding constituting the MindBridge Platform are the exclusive intellectual property of MindBridge Digital Health Platform.
+    content: (_c) => `9.1 All proprietary technology, algorithms, matching systems, content, and branding constituting the Clearhead Platform are the exclusive intellectual property of Clearhead Digital Health Platform.
 
 9.2 Session notes and treatment plans created by Providers remain the joint property of the Provider and Patient. Patients have the right to request a copy at any time.
 
@@ -137,11 +137,11 @@ ${c.code === "JO" ? "Jordan Emergency: 911 / Psychiatric Emergency: 110" : c.cod
     id: "10",
     title: "10. Limitation of Liability",
     icon: AlertTriangle,
-    content: (c) => `10.1 To the maximum extent permitted by the laws of ${c.name}, MindBridge's total cumulative liability to any User shall not exceed the total fees paid by that User in the 12 months preceding the claim.
+    content: (c) => `10.1 To the maximum extent permitted by the laws of ${c.name}, Clearhead's total cumulative liability to any User shall not exceed the total fees paid by that User in the 12 months preceding the claim.
 
-10.2 MindBridge is not liable for the clinical acts or omissions of independent Providers, who operate as independent contractors and not employees or agents of the Platform.
+10.2 Clearhead is not liable for the clinical acts or omissions of independent Providers, who operate as independent contractors and not employees or agents of the Platform.
 
-10.3 MindBridge shall not be liable for indirect, incidental, special, punitive, or consequential damages of any nature arising out of or related to this Agreement.
+10.3 Clearhead shall not be liable for indirect, incidental, special, punitive, or consequential damages of any nature arising out of or related to this Agreement.
 
 10.4 Certain jurisdictions in ${c.region} do not permit limitation of liability for personal injury or death caused by negligence. Nothing in this Agreement shall exclude liability where such exclusion is prohibited by applicable law.`,
   },
@@ -149,9 +149,9 @@ ${c.code === "JO" ? "Jordan Emergency: 911 / Psychiatric Emergency: 110" : c.cod
     id: "11",
     title: "11. Termination & Account Closure",
     icon: FileText,
-    content: (_c) => `11.1 Either party may terminate this Agreement at any time with 14 days written notice via the Platform or to legal@mindbridge.health.
+    content: (_c) => `11.1 Either party may terminate this Agreement at any time with 14 days written notice via the Platform or to legal@clearhead.health.
 
-11.2 MindBridge may immediately suspend or terminate an account for: (a) breach of this Agreement; (b) fraudulent activity; (c) misuse of the platform; (d) harm or threatened harm to a Provider.
+11.2 Clearhead may immediately suspend or terminate an account for: (a) breach of this Agreement; (b) fraudulent activity; (c) misuse of the platform; (d) harm or threatened harm to a Provider.
 
 11.3 Upon termination, Patient data is retained for the legally required minimum period under applicable law before secure deletion. Patients may request a data export within 30 days of account closure.
 
@@ -161,11 +161,11 @@ ${c.code === "JO" ? "Jordan Emergency: 911 / Psychiatric Emergency: 110" : c.cod
     id: "12",
     title: "12. Amendments & Notifications",
     icon: FileText,
-    content: (_c) => `12.1 MindBridge reserves the right to amend this Agreement at any time. Material changes will be communicated by email to the registered address not less than 30 days before taking effect.
+    content: (_c) => `12.1 Clearhead reserves the right to amend this Agreement at any time. Material changes will be communicated by email to the registered address not less than 30 days before taking effect.
 
 12.2 Continued use of the Platform following the effective date of any amendment constitutes acceptance of the revised terms.
 
-12.3 All legal notices to MindBridge must be sent in writing to: legal@mindbridge.health or to the registered business address listed in the Platform's legal register.`,
+12.3 All legal notices to Clearhead must be sent in writing to: legal@clearhead.health or to the registered business address listed in the Platform's legal register.`,
   },
   {
     id: "13",
@@ -209,10 +209,10 @@ ${c.code === "JO" ? "Jordan Emergency: 911 / Psychiatric Emergency: 110" : c.cod
       "Local health regulatory authority and data protection authority"
     }
 
-MindBridge Legal & Compliance:
-  Email: legal@mindbridge.health
-  Data Protection Officer: dpo@mindbridge.health
-  Patient Advocacy: support@mindbridge.health
+Clearhead Legal & Compliance:
+  Email: legal@clearhead.health
+  Data Protection Officer: dpo@clearhead.health
+  Patient Advocacy: support@clearhead.health
   Business Hours: Sunday–Thursday, 9:00 AM – 6:00 PM (GMT+3)
 
 Complaints: Patients in ${c.name} may also lodge complaints directly with the ${c.name} data protection authority or health regulator listed above.`,
@@ -349,7 +349,7 @@ export default function Contracts() {
                   className="mb-6 p-6 rounded-3xl bg-gradient-to-br from-[hsl(188,73%,8%)] to-[hsl(188,55%,18%)] text-white">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="text-white/50 text-xs font-medium mb-1 uppercase tracking-wide">MindBridge Digital Health Platform</div>
+                      <div className="text-white/50 text-xs font-medium mb-1 uppercase tracking-wide">Clearhead Digital Health Platform</div>
                       <h2 className="font-serif text-2xl font-bold mb-1">Telehealth Services Agreement</h2>
                       <div className="text-white/60 text-sm">Jurisdiction: {country.flag} {country.name} · {country.region}</div>
                     </div>
@@ -360,7 +360,7 @@ export default function Contracts() {
                   <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-3 gap-4 text-xs">
                     <div><div className="text-white/40">Version</div><div className="font-semibold">v4.2 — 2025</div></div>
                     <div><div className="text-white/40">Data Law</div><div className="font-semibold">{country.legalFramework.split(" ")[0]} {country.legalFramework.split(" ")[1]}</div></div>
-                    <div><div className="text-white/40">Tax Rate</div><div className="font-semibold">{country.taxRate > 0 ? `${Math.round(country.taxRate * 100)}% applicable` : "No consumption tax"}</div></div>
+                    <div><div className="text-white/40">Legal System</div><div className="font-semibold">{country.legalSystem.split(" ").slice(0, 2).join(" ")}</div></div>
                   </div>
                 </motion.div>
               </AnimatePresence>
@@ -403,7 +403,7 @@ export default function Contracts() {
               {/* Footer */}
               <div className="mt-8 p-6 rounded-2xl bg-muted/40 border border-border text-xs text-muted-foreground leading-relaxed">
                 <p className="font-semibold text-foreground mb-2">Legal Disclaimer</p>
-                <p>This document is a dynamic representation of MindBridge's standard terms adapted to {country.name}. It does not constitute legal advice. Users are encouraged to seek independent legal counsel in {country.name} regarding their specific rights and obligations. MindBridge's full legal team review ensures this document is updated quarterly or upon material changes in {country.legalFramework}.</p>
+                <p>This document is a dynamic representation of Clearhead's standard terms adapted to {country.name}. It does not constitute legal advice. Users are encouraged to seek independent legal counsel in {country.name} regarding their specific rights and obligations. Clearhead's full legal team review ensures this document is updated quarterly or upon material changes in {country.legalFramework}.</p>
                 <p className="mt-2">Last reviewed: Q4 2025 · For {country.name} — {country.legalFramework}</p>
               </div>
             </FadeIn>

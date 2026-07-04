@@ -1,234 +1,129 @@
-export interface CountryPricing {
+export type PricingTier = {
+  name: string;
+  description: string;
+  localPrice: number;
+  minutesPerSession: number;
+  sessionsPerMonth: number;
+  recommended: boolean;
+  features: string[];
+};
+
+export type CountryPricing = {
   code: string;
   name: string;
   flag: string;
   currency: string;
   symbol: string;
   usdRate: number;
-  region: string;
-  legalFramework: string;
-  tiers: {
-    name: string;
-    label: string;
-    minutesPerSession: number;
-    localPrice: number;
-    sessionsPerMonth: number;
-    features: string[];
-    recommended?: boolean;
-  }[];
   culturalNote: string;
-  taxNote: string;
+  legalSystem: string;
+  legalFramework: string;
+  region: string;
+  language: "en" | "ar" | "fr" | "de" | "tr";
   taxRate: number;
+  taxNote: string;
+  tiers: PricingTier[];
+};
+
+type RawCountry = Omit<CountryPricing, "tiers">;
+
+function makeTiers(c: RawCountry): PricingTier[] {
+  const r = c.usdRate;
+  return [
+    {
+      name: "Essential",
+      description: "Ideal for getting started",
+      localPrice: Math.round(45 * r),
+      minutesPerSession: 45,
+      sessionsPerMonth: 4,
+      recommended: false,
+      features: ["45-min video sessions", "Text messaging support", "Session notes", "Secure encrypted chat"],
+    },
+    {
+      name: "Standard",
+      description: "Most popular for ongoing care",
+      localPrice: Math.round(65 * r),
+      minutesPerSession: 60,
+      sessionsPerMonth: 4,
+      recommended: true,
+      features: ["60-min video sessions", "Unlimited text messaging", "Session notes", "Crisis support line", "Progress tracking"],
+    },
+    {
+      name: "Premium",
+      description: "Intensive, immersive therapy",
+      localPrice: Math.round(95 * r),
+      minutesPerSession: 90,
+      sessionsPerMonth: 4,
+      recommended: false,
+      features: ["90-min deep-dive sessions", "Unlimited messaging", "Priority scheduling", "Psychiatry add-on eligible", "Family session included"],
+    },
+  ];
 }
 
-export const COUNTRIES: Record<string, CountryPricing> = {
-  JO: {
-    code: "JO", name: "Jordan", flag: "🇯🇴",
-    currency: "JOD", symbol: "JD", usdRate: 0.71,
-    region: "Middle East", legalFramework: "Jordan Data Protection Law (PDL) 2023",
-    culturalNote: "Sessions available in Arabic. Therapists understand Arab culture, family dynamics, and Islamic values.",
-    taxNote: "Subject to Jordanian General Sales Tax (GST) at 16%",
-    taxRate: 0.16,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 18, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 29, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 48, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  US: {
-    code: "US", name: "United States", flag: "🇺🇸",
-    currency: "USD", symbol: "$", usdRate: 1.0,
-    region: "North America", legalFramework: "HIPAA (Health Insurance Portability and Accountability Act)",
-    culturalNote: "All sessions conducted in English. Providers experienced with diverse American communities.",
-    taxNote: "Prices may be eligible for HSA/FSA reimbursement. No federal sales tax on medical services.",
-    taxRate: 0,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 89, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 149, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 249, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  GB: {
-    code: "GB", name: "United Kingdom", flag: "🇬🇧",
-    currency: "GBP", symbol: "£", usdRate: 0.79,
-    region: "Europe", legalFramework: "UK GDPR & Data Protection Act 2018",
-    culturalNote: "BACP-aligned practice standards. Providers familiar with NHS pathways and British cultural contexts.",
-    taxNote: "Mental health services are VAT-exempt under HMRC Schedule 9 Group 7.",
-    taxRate: 0,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 55, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 89, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 145, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  SA: {
-    code: "SA", name: "Saudi Arabia", flag: "🇸🇦",
-    currency: "SAR", symbol: "﷼", usdRate: 3.75,
-    region: "Middle East", legalFramework: "Saudi Personal Data Protection Law (PDPL) 2021",
-    culturalNote: "Culturally sensitive sessions in Arabic and English. Providers respect Islamic values and Saudi societal norms.",
-    taxNote: "Subject to Saudi VAT at 15% per ZATCA regulations.",
-    taxRate: 0.15,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 249, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 399, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 699, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  AE: {
-    code: "AE", name: "United Arab Emirates", flag: "🇦🇪",
-    currency: "AED", symbol: "د.إ", usdRate: 3.67,
-    region: "Middle East", legalFramework: "UAE Federal Law No. 45 of 2021 (PDPL)",
-    culturalNote: "Multilingual providers for UAE's diverse expat and Emirati population. Arabic, English, Hindi available.",
-    taxNote: "Subject to UAE VAT at 5%. Medical services may qualify for exemption.",
-    taxRate: 0.05,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 299, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 499, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 849, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  DE: {
-    code: "DE", name: "Germany", flag: "🇩🇪",
-    currency: "EUR", symbol: "€", usdRate: 1.08,
-    region: "Europe", legalFramework: "GDPR (EU Regulation 2016/679) & Bundesdatenschutzgesetz (BDSG)",
-    culturalNote: "Evidence-based CBT and psychoanalytic traditions. German, English, Turkish providers available.",
-    taxNote: "Heilpraktiker sessions: 19% VAT. Psychological psychotherapist sessions: VAT-exempt.",
-    taxRate: 0.19,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 65, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 99, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 165, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  EG: {
-    code: "EG", name: "Egypt", flag: "🇪🇬",
-    currency: "EGP", symbol: "E£", usdRate: 30.9,
-    region: "Middle East / North Africa", legalFramework: "Egypt Personal Data Protection Law No. 151 of 2020",
-    culturalNote: "Arabic-first sessions. Providers sensitive to Egyptian social norms, family expectations, and religious identity.",
-    taxNote: "Subject to Egyptian VAT at 14%.",
-    taxRate: 0.14,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 550, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 950, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 1750, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  LB: {
-    code: "LB", name: "Lebanon", flag: "🇱🇧",
-    currency: "USD", symbol: "$", usdRate: 1.0,
-    region: "Middle East", legalFramework: "Lebanese Law on Personal Data Protection (Draft 2021)",
-    culturalNote: "Sessions in Arabic, French, or English. Providers understand Lebanon's unique socio-political challenges.",
-    taxNote: "Priced in USD due to Lebanese pound instability. Subject to Lebanese VAT at 11%.",
-    taxRate: 0.11,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 22, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 38, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 65, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  CA: {
-    code: "CA", name: "Canada", flag: "🇨🇦",
-    currency: "CAD", symbol: "CA$", usdRate: 1.36,
-    region: "North America", legalFramework: "PIPEDA (Personal Information Protection and Electronic Documents Act)",
-    culturalNote: "Bilingual (English/French) providers. Familiar with diverse Canadian multicultural contexts.",
-    taxNote: "Eligible for Medical Expense Tax Credit (METC). Provincial taxes may apply.",
-    taxRate: 0.05,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 119, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 199, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 329, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  TR: {
-    code: "TR", name: "Turkey", flag: "🇹🇷",
-    currency: "TRY", symbol: "₺", usdRate: 32.0,
-    region: "Europe / Middle East", legalFramework: "Turkish Personal Data Protection Law (KVKK) No. 6698",
-    culturalNote: "Turkish and English sessions available. Providers familiar with both secular and traditional Turkish values.",
-    taxNote: "Subject to Turkish KDV (VAT) at 20%. Medical services may qualify for reduced rate.",
-    taxRate: 0.20,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 1200, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 1900, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 3200, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  AU: {
-    code: "AU", name: "Australia", flag: "🇦🇺",
-    currency: "AUD", symbol: "A$", usdRate: 1.53,
-    region: "Oceania", legalFramework: "Privacy Act 1988 & Australian Privacy Principles (APPs)",
-    culturalNote: "AHPRA-aligned providers. Medicare rebates may partially offset session costs.",
-    taxNote: "Mental health services are GST-free under Australian Tax Law.",
-    taxRate: 0,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 119, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 195, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 320, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  IN: {
-    code: "IN", name: "India", flag: "🇮🇳",
-    currency: "INR", symbol: "₹", usdRate: 83.5,
-    region: "South Asia", legalFramework: "Digital Personal Data Protection Act (DPDPA) 2023",
-    culturalNote: "Hindi, English, and regional language sessions. Providers sensitive to Indian family structures and cultural stigma around mental health.",
-    taxNote: "Healthcare services exempt from GST. Subject to 18% GST if classified as online information services.",
-    taxRate: 0.18,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 1200, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 2200, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 3800, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  QA: {
-    code: "QA", name: "Qatar", flag: "🇶🇦",
-    currency: "QAR", symbol: "ر.ق", usdRate: 3.64,
-    region: "Middle East", legalFramework: "Qatar Personal Data Privacy Protection Law No. 13 of 2016",
-    culturalNote: "Arabic and English sessions. Confidentiality rigorously maintained given Qatar's collectivist culture.",
-    taxNote: "Qatar has no VAT. No applicable consumption tax on professional services.",
-    taxRate: 0,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 250, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 420, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 720, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  FR: {
-    code: "FR", name: "France", flag: "🇫🇷",
-    currency: "EUR", symbol: "€", usdRate: 1.08,
-    region: "Europe", legalFramework: "GDPR & Loi Informatique et Libertés (French Data Protection Act)",
-    culturalNote: "French and English sessions. Psychodynamic and existential approaches prevalent in French clinical tradition.",
-    taxNote: "Psychotherapy by non-médecins subject to 20% TVA. Psychiatrist sessions covered by Assurance Maladie.",
-    taxRate: 0.20,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 60, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 95, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 155, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-  MA: {
-    code: "MA", name: "Morocco", flag: "🇲🇦",
-    currency: "MAD", symbol: "DH", usdRate: 10.05,
-    region: "North Africa", legalFramework: "Moroccan Law No. 09-08 on Personal Data Protection",
-    culturalNote: "Darija, French, and Modern Standard Arabic sessions. Providers understand Moroccan family expectations and Islamic identity.",
-    taxNote: "Subject to Moroccan TVA at 10% for professional services.",
-    taxRate: 0.10,
-    tiers: [
-      { name: "essential", label: "Essential", minutesPerSession: 45, localPrice: 280, sessionsPerMonth: 4, recommended: false, features: ["45-min video session", "Secure messaging", "Session notes", "Crisis line access"] },
-      { name: "standard", label: "Standard", minutesPerSession: 55, localPrice: 480, sessionsPerMonth: 4, recommended: true, features: ["55-min video/phone session", "Messaging between sessions", "Monthly progress report", "Homework & exercises", "Priority booking"] },
-      { name: "premium", label: "Premium", minutesPerSession: 60, localPrice: 850, sessionsPerMonth: 8, recommended: false, features: ["60-min session × 2/week", "Unlimited messaging", "Psychiatrist collaboration", "Family session included", "Emergency support", "Custom treatment plan"] },
-    ],
-  },
-};
+const RAW: RawCountry[] = [
+  { code: "JO", name: "Jordan", flag: "🇯🇴", currency: "JOD", symbol: "JD", usdRate: 0.71, culturalNote: "Arabic-speaking providers available with culturally-attuned care.", legalSystem: "Jordanian Civil Law", legalFramework: "Jordan Personal Data Protection Law 2023", region: "Middle East", language: "ar", taxRate: 0, taxNote: "No general VAT applies to health services in Jordan." },
+  { code: "US", name: "United States", flag: "🇺🇸", currency: "USD", symbol: "$", usdRate: 1.0, culturalNote: "HIPAA-compliant sessions. Insurance reimbursement may apply.", legalSystem: "US Federal Law", legalFramework: "HIPAA & State Privacy Laws", region: "North America", language: "en", taxRate: 0, taxNote: "Mental health services are generally exempt from sales tax in the US." },
+  { code: "GB", name: "United Kingdom", flag: "🇬🇧", currency: "GBP", symbol: "£", usdRate: 0.79, culturalNote: "Sessions in English, FCA regulated, NHS-complementary.", legalSystem: "English Common Law", legalFramework: "UK GDPR & Data Protection Act 2018", region: "Europe", language: "en", taxRate: 0, taxNote: "Medical and therapy services are VAT-exempt in the UK." },
+  { code: "SA", name: "Saudi Arabia", flag: "🇸🇦", currency: "SAR", symbol: "﷼", usdRate: 3.75, culturalNote: "Arabic & Islamic-aware therapy. Female providers available upon request.", legalSystem: "Saudi Islamic Law", legalFramework: "Saudi Personal Data Protection Law (PDPL) 2022", region: "Middle East", language: "ar", taxRate: 0.15, taxNote: "15% VAT applies to telehealth services under Saudi VAT regulations (ZATCA)." },
+  { code: "AE", name: "United Arab Emirates", flag: "🇦🇪", currency: "AED", symbol: "د.إ", usdRate: 3.67, culturalNote: "Multilingual providers available. DHA-licensed practitioners.", legalSystem: "UAE Civil Law", legalFramework: "UAE Federal Decree-Law No. 45 of 2021 (PDPL)", region: "Middle East", language: "ar", taxRate: 0.05, taxNote: "5% VAT applies under UAE Federal Decree-Law No. 8 of 2017." },
+  { code: "DE", name: "Germany", flag: "🇩🇪", currency: "EUR", symbol: "€", usdRate: 0.92, culturalNote: "BPtK-regulated. Sessions in German and English.", legalSystem: "German Civil Law (BGB)", legalFramework: "EU GDPR & Bundesdatenschutzgesetz (BDSG)", region: "Europe", language: "de", taxRate: 0, taxNote: "Psychological therapy services are exempt from German VAT (§ 4 Nr. 14 UStG)." },
+  { code: "EG", name: "Egypt", flag: "🇪🇬", currency: "EGP", symbol: "E£", usdRate: 30.9, culturalNote: "Arabic-speaking providers, WHO affiliated, affordable rates.", legalSystem: "Egyptian Civil Law", legalFramework: "Egyptian Data Protection Law No. 151 of 2020", region: "Middle East & Africa", language: "ar", taxRate: 0.14, taxNote: "14% VAT applies to telehealth services under Egyptian Tax Authority rules." },
+  { code: "FR", name: "France", flag: "🇫🇷", currency: "EUR", symbol: "€", usdRate: 0.92, culturalNote: "French & English sessions, ADELI certified, CNIL compliant.", legalSystem: "French Civil Law", legalFramework: "EU GDPR & Loi Informatique et Libertés (CNIL)", region: "Europe", language: "fr", taxRate: 0, taxNote: "Health and psychotherapy services are VAT-exempt in France (CGI Art. 261)." },
+  { code: "LB", name: "Lebanon", flag: "🇱🇧", currency: "USD", symbol: "$", usdRate: 1.0, culturalNote: "Arabic, French & English available. Humanitarian pricing available.", legalSystem: "Lebanese Civil Code", legalFramework: "Lebanese Law No. 81 on Electronic Transactions", region: "Middle East", language: "ar", taxRate: 0.11, taxNote: "11% VAT applies to telehealth services under Lebanese VAT Law 379/2001." },
+  { code: "MA", name: "Morocco", flag: "🇲🇦", currency: "MAD", symbol: "DH", usdRate: 10.1, culturalNote: "Darija, French & English sessions available.", legalSystem: "Moroccan Civil Law", legalFramework: "Moroccan Law No. 09-08 on Data Protection", region: "North Africa", language: "ar", taxRate: 0.20, taxNote: "20% VAT applies to telehealth under Moroccan Code Général des Impôts." },
+  { code: "IN", name: "India", flag: "🇮🇳", currency: "INR", symbol: "₹", usdRate: 83.2, culturalNote: "Hindi, English & regional languages. Affordable, accessible rates.", legalSystem: "Indian Common Law", legalFramework: "Digital Personal Data Protection Act 2023 (DPDP)", region: "South Asia", language: "en", taxRate: 0.18, taxNote: "18% GST may apply to telehealth services under Indian GST regulations." },
+  { code: "AU", name: "Australia", flag: "🇦🇺", currency: "AUD", symbol: "A$", usdRate: 1.53, culturalNote: "AHPRA-registered providers. Medicare rebate may apply.", legalSystem: "Australian Common Law", legalFramework: "Privacy Act 1988 & Australian Privacy Principles", region: "Oceania", language: "en", taxRate: 0, taxNote: "Mental health services are GST-exempt in Australia (GST Act 1999, Div 38)." },
+  { code: "QA", name: "Qatar", flag: "🇶🇦", currency: "QAR", symbol: "QR", usdRate: 3.64, culturalNote: "Arabic & English, MOPH and QCHP licensed practitioners.", legalSystem: "Qatari Civil Law", legalFramework: "Qatar Law No. 13 of 2016 on Personal Data Privacy", region: "Middle East", language: "ar", taxRate: 0, taxNote: "Qatar has no VAT at present. No tax applies to telehealth services." },
+  { code: "TR", name: "Turkey", flag: "🇹🇷", currency: "TRY", symbol: "₺", usdRate: 32.0, culturalNote: "Turkish & English available. TTB-licensed providers.", legalSystem: "Turkish Civil Code", legalFramework: "Turkish KVKK (PDPL Law No. 6698)", region: "Europe & Middle East", language: "tr", taxRate: 0.18, taxNote: "18% KDV (VAT) applies to telehealth under Turkish tax regulations." },
+  { code: "CA", name: "Canada", flag: "🇨🇦", currency: "CAD", symbol: "C$", usdRate: 1.37, culturalNote: "English & French, provincial licensing. Indigenous services available.", legalSystem: "Canadian Common Law", legalFramework: "PIPEDA & provincial health privacy laws", region: "North America", language: "en", taxRate: 0, taxNote: "Psychotherapy services are generally HST/GST-exempt in most Canadian provinces." },
+  { code: "KW", name: "Kuwait", flag: "🇰🇼", currency: "KWD", symbol: "KD", usdRate: 0.308, culturalNote: "Arabic & English, MOH regulated. Conservative therapeutic approaches available.", legalSystem: "Kuwaiti Civil Law", legalFramework: "Kuwaiti Law No. 20 of 2014 on E-Commerce", region: "Middle East", language: "ar", taxRate: 0, taxNote: "Kuwait has no VAT. No tax applies to telehealth services." },
+  { code: "BH", name: "Bahrain", flag: "🇧🇭", currency: "BHD", symbol: "BD", usdRate: 0.376, culturalNote: "Arabic & English sessions. NHRA licensed providers.", legalSystem: "Bahraini Civil Law", legalFramework: "Bahrain PDPL (Law No. 30 of 2018)", region: "Middle East", language: "ar", taxRate: 0.10, taxNote: "10% VAT applies to services in Bahrain under VAT Law 2018." },
+  { code: "OM", name: "Oman", flag: "🇴🇲", currency: "OMR", symbol: "RO", usdRate: 0.385, culturalNote: "Arabic & English, MOH licensed. Oman Vision 2040 wellness services.", legalSystem: "Omani Civil Law", legalFramework: "Oman Personal Data Protection Law (Royal Decree 6/2022)", region: "Middle East", language: "ar", taxRate: 0.05, taxNote: "5% VAT applies in Oman under the GCC VAT framework." },
+  { code: "IQ", name: "Iraq", flag: "🇮🇶", currency: "IQD", symbol: "IQD", usdRate: 1310, culturalNote: "Arabic-speaking providers. Humanitarian and low-cost options available.", legalSystem: "Iraqi Civil Code", legalFramework: "Iraqi Communications & Media Commission regulations", region: "Middle East", language: "ar", taxRate: 0, taxNote: "Iraq does not currently have a comprehensive VAT system for services." },
+  { code: "PS", name: "Palestine", flag: "🇵🇸", currency: "ILS", symbol: "₪", usdRate: 3.75, culturalNote: "Arabic & English, WHO supported. Trauma-informed care specialists.", legalSystem: "Palestinian Authority Law", legalFramework: "Palestinian Authority regulations", region: "Middle East", language: "ar", taxRate: 0.17, taxNote: "17% VAT applies under Palestinian Authority tax law." },
+  { code: "SY", name: "Syria", flag: "🇸🇾", currency: "USD", symbol: "$", usdRate: 1.0, culturalNote: "Arabic providers. Humanitarian support pricing available.", legalSystem: "Syrian Civil Code", legalFramework: "Syrian Electronic Crimes Law", region: "Middle East", language: "ar", taxRate: 0, taxNote: "Humanitarian pricing applies. Contact support for subsidised access." },
+  { code: "PK", name: "Pakistan", flag: "🇵🇰", currency: "PKR", symbol: "Rs", usdRate: 280, culturalNote: "Urdu & English, PMDC regulated. Culturally sensitive therapy.", legalSystem: "Pakistani Common Law", legalFramework: "Pakistan Personal Data Protection Bill", region: "South Asia", language: "en", taxRate: 0.17, taxNote: "17% GST may apply to telehealth services under Pakistani FBR rules." },
+  { code: "NG", name: "Nigeria", flag: "🇳🇬", currency: "NGN", symbol: "₦", usdRate: 1540, culturalNote: "English sessions, MDCN regulated. Pan-African mental health network.", legalSystem: "Nigerian Common Law", legalFramework: "Nigeria Data Protection Regulation (NDPR) 2019", region: "West Africa", language: "en", taxRate: 0.075, taxNote: "7.5% VAT applies under the Nigerian Finance Act 2019." },
+  { code: "ZA", name: "South Africa", flag: "🇿🇦", currency: "ZAR", symbol: "R", usdRate: 18.8, culturalNote: "English & Afrikaans available. HPCSA registered practitioners.", legalSystem: "South African Common Law", legalFramework: "POPIA (Protection of Personal Information Act 4 of 2013)", region: "Southern Africa", language: "en", taxRate: 0.15, taxNote: "15% VAT applies to telehealth in South Africa (SARS VAT Act 89/1991)." },
+  { code: "SG", name: "Singapore", flag: "🇸🇬", currency: "SGD", symbol: "S$", usdRate: 1.34, culturalNote: "English sessions, SMC regulated. Mental Wellness Fund eligible.", legalSystem: "Singapore Common Law", legalFramework: "Personal Data Protection Act (PDPA) 2012", region: "Southeast Asia", language: "en", taxRate: 0.09, taxNote: "9% GST applies to services in Singapore (GST Act, Jan 2024 rate)." },
+];
+
+function buildCountry(raw: RawCountry): CountryPricing {
+  return { ...raw, tiers: makeTiers(raw) };
+}
+
+export const COUNTRIES: Record<string, CountryPricing> = Object.fromEntries(
+  RAW.map((r) => [r.code, buildCountry(r)])
+);
 
 export const COUNTRY_LIST = Object.values(COUNTRIES).sort((a, b) => a.name.localeCompare(b.name));
 
-export function toUSD(localPrice: number, country: CountryPricing): number {
-  return Math.round((localPrice / country.usdRate) * 100) / 100;
+export const SESSION_DURATIONS = [
+  { label: "45 min", minutes: 45, multiplier: 1 },
+  { label: "60 min", minutes: 60, multiplier: 1.3 },
+  { label: "90 min", minutes: 90, multiplier: 1.8 },
+];
+
+export function getSessionPrice(baseUSD: number, minutes: number, country: CountryPricing): { usd: number; local: number } {
+  const dur = SESSION_DURATIONS.find((d) => d.minutes === minutes) ?? SESSION_DURATIONS[0];
+  const usd = Math.round(baseUSD * dur.multiplier);
+  const local = Math.round(usd * country.usdRate);
+  return { usd, local };
 }
 
-export function fromUSD(usdPrice: number, country: CountryPricing): number {
-  return Math.round(usdPrice * country.usdRate);
+export function formatPrice(amount: number, country: CountryPricing): string {
+  return `${country.symbol}${amount.toLocaleString()}`;
 }
 
-export function formatPrice(localPrice: number, country: CountryPricing): string {
-  return `${country.symbol}${localPrice.toLocaleString()}`;
+export function toUSD(localAmount: number, country: CountryPricing): number {
+  return Math.round(localAmount / country.usdRate);
 }
+
+export const PROMO_CODES: Record<string, number> = {
+  CLEAR20: 0.20,
+  MIND15: 0.15,
+  WELCOME10: 0.10,
+  FIRST30: 0.30,
+  HEALTH25: 0.25,
+  CLEARHEAD: 0.15,
+};

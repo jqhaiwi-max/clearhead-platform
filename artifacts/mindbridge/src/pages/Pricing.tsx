@@ -77,9 +77,9 @@ function TierCard({ tier, country, isAnnual }: { tier: CountryPricing["tiers"][0
         {country.currency !== "USD" && (
           <div className={`text-sm mt-1 ${tier.recommended ? "text-white/60" : "text-muted-foreground"}`}>≈ ${usdEquiv} USD</div>
         )}
-        {country.taxRate > 0 && (
+        {false && (
           <div className={`text-xs mt-0.5 ${tier.recommended ? "text-white/50" : "text-muted-foreground/70"}`}>
-            {formatPrice(withTax, country)} incl. {Math.round(country.taxRate * 100)}% tax
+            {formatPrice(withTax, country)} incl. tax
           </div>
         )}
         {isAnnual && (
