@@ -1,15 +1,24 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: MindBridge psychiatric care platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: providers
+    description: Psychiatrist/therapist provider operations
+  - name: appointments
+    description: Appointment booking operations
+  - name: specialties
+    description: Specialty/service operations
+  - name: testimonials
+    description: Patient testimonial operations
+  - name: stats
+    description: Platform statistics
 paths:
   /healthz:
     get:
@@ -24,6 +33,222 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /providers:
+    get:
+      operationId: listProviders
+      tags: [providers]
+      summary: List all providers
+      parameters:
+        - name: specialty
+          in: query
+          schema:
+            type: string
+        - name: available
+          in: query
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Provider"
+    post:
+      operationId: createProvider
+      tags: [providers]
+      summary: Create a new provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderInput"
+      responses:
+        "201":
+          description: Created provider
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+
+  /providers/{id}:
+    get:
+      operationId: getProvider
+      tags: [providers]
+      summary: Get a provider by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Provider details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+        "404":
+          description: Provider not found
+
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [appointments]
+      summary: List all appointments
+      responses:
+        "200":
+          description: List of appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+    post:
+      operationId: createAppointment
+      tags: [appointments]
+      summary: Book a new appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentInput"
+      responses:
+        "201":
+          description: Appointment booked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+
+  /appointments/{id}:
+    get:
+      operationId: getAppointment
+      tags: [appointments]
+      summary: Get an appointment by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Appointment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+    patch:
+      operationId: updateAppointment
+      tags: [appointments]
+      summary: Update appointment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentUpdate"
+      responses:
+        "200":
+          description: Updated appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+
+  /specialties:
+    get:
+      operationId: listSpecialties
+      tags: [specialties]
+      summary: List all mental health specialties
+      responses:
+        "200":
+          description: List of specialties
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Specialty"
+
+  /testimonials:
+    get:
+      operationId: listTestimonials
+      tags: [testimonials]
+      summary: List patient testimonials
+      responses:
+        "200":
+          description: List of testimonials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Testimonial"
+    post:
+      operationId: createTestimonial
+      tags: [testimonials]
+      summary: Submit a new testimonial
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestimonialInput"
+      responses:
+        "201":
+          description: Testimonial submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Testimonial"
+
+  /stats/platform:
+    get:
+      operationId: getPlatformStats
+      tags: [stats]
+      summary: Get platform-level statistics
+      responses:
+        "200":
+          description: Platform stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformStats"
+
+  /providers/featured:
+    get:
+      operationId: getFeaturedProviders
+      tags: [providers]
+      summary: Get featured/top-rated providers
+      responses:
+        "200":
+          description: Featured providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Provider"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +259,180 @@ components:
       required:
         - status
 
+    Provider:
+      type: object
+      required: [id, name, title, specialty, bio, rating, reviewCount, yearsExperience, imageUrl, available, sessionPrice]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        title:
+          type: string
+        specialty:
+          type: string
+        bio:
+          type: string
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+        yearsExperience:
+          type: integer
+        imageUrl:
+          type: string
+        available:
+          type: boolean
+        sessionPrice:
+          type: integer
+        languages:
+          type: ["array", "null"]
+          items:
+            type: string
+        acceptsInsurance:
+          type: boolean
+        nextAvailable:
+          type: ["string", "null"]
+
+    ProviderInput:
+      type: object
+      required: [name, title, specialty, bio, yearsExperience, imageUrl, sessionPrice]
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        specialty:
+          type: string
+        bio:
+          type: string
+        yearsExperience:
+          type: integer
+        imageUrl:
+          type: string
+        sessionPrice:
+          type: integer
+        languages:
+          type: array
+          items:
+            type: string
+        acceptsInsurance:
+          type: boolean
+
+    Appointment:
+      type: object
+      required: [id, patientName, patientEmail, providerId, providerName, date, time, type, status, createdAt]
+      properties:
+        id:
+          type: integer
+        patientName:
+          type: string
+        patientEmail:
+          type: string
+        providerId:
+          type: integer
+        providerName:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    AppointmentInput:
+      type: object
+      required: [patientName, patientEmail, providerId, date, time, type]
+      properties:
+        patientName:
+          type: string
+        patientEmail:
+          type: string
+        providerId:
+          type: integer
+        date:
+          type: string
+        time:
+          type: string
+        type:
+          type: string
+        notes:
+          type: string
+
+    AppointmentUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+        notes:
+          type: string
+
+    Specialty:
+      type: object
+      required: [id, name, description, iconName, providerCount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        iconName:
+          type: string
+        providerCount:
+          type: integer
+
+    Testimonial:
+      type: object
+      required: [id, patientName, content, rating, condition, createdAt]
+      properties:
+        id:
+          type: integer
+        patientName:
+          type: string
+        content:
+          type: string
+        rating:
+          type: integer
+        condition:
+          type: string
+        createdAt:
+          type: string
+        avatarInitials:
+          type: string
+
+    TestimonialInput:
+      type: object
+      required: [patientName, content, rating, condition]
+      properties:
+        patientName:
+          type: string
+        content:
+          type: string
+        rating:
+          type: integer
+        condition:
+          type: string
+
+    PlatformStats:
+      type: object
+      required: [totalProviders, totalPatients, totalSessions, avgRating, countriesServed, satisfactionRate]
+      properties:
+        totalProviders:
+          type: integer
+        totalPatients:
+          type: integer
+        totalSessions:
+          type: integer
+        avgRating:
+          type: number
+        countriesServed:
+          type: integer
+        satisfactionRate:
+          type: number

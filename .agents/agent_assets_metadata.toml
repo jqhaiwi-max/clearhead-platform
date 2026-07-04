@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "6zkH7KBJRYD7thiooo6Ss"
+uri = "file://artifacts/mindbridge/public/hero-ambient.png"
+type = "image"
+title = "Calm therapy room natural light"
+
+[[generated]]
+id = "7_ARkGo2O_AYxO7anA4Bm"
+uri = "file://artifacts/mindbridge/public/provider-1.png"
+type = "image"
+title = "Female psychiatrist portrait warm smile"
+
+[[generated]]
+id = "gkk8XnJNJcOtkITuEHXPp"
+uri = "file://artifacts/mindbridge/public/provider-2.png"
+type = "image"
+title = "Male therapist portrait warm smile"
+
+[[generated]]
+id = "kS7EjFbJ2BVhCIXhSiz8V"
+uri = "file://artifacts/mindbridge/public/provider-3.png"
+type = "image"
+title = "Diverse female therapist portrait"
