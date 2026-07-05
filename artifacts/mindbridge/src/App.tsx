@@ -6,6 +6,7 @@ import { CountryProvider } from "@/context/CountryContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import LocaleGate from "@/components/LocaleGate";
 import Landing from "@/pages/Landing";
 import Providers from "@/pages/Providers";
 import ProviderDetail from "@/pages/ProviderDetail";
@@ -34,6 +35,7 @@ function Router() {
 
   return (
     <>
+      <LocaleGate />
       {!isFullScreen && <Navbar />}
       <Switch>
         <Route path="/" component={Landing} />

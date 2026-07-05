@@ -36,8 +36,25 @@ const CountryContext = createContext<CountryCtx>({
   countryList: COUNTRY_LIST,
 });
 
+const COUNTRY_STORAGE_KEY = "clearhead_country";
+
 export function CountryProvider({ children }: { children: ReactNode }) {
-  const [country, setCountry] = useState<CountryPricing>(detectDefault);
+  const [country, setCountryState] = useState<CountryPricing>(() => {
+    try {
+      const saved = localStorage.getItem(COUNTRY_STORAGE_KEY);
+      if (saved) {
+        const found = COUNTRY_LIST.find(c => c.code === saved);
+        if (found) return found;
+      }
+    } catch {}
+    return detectDefault();
+  });
+
+  const setCountry = (c: CountryPricing) => {
+    setCountryState(c);
+    try { localStorage.setItem(COUNTRY_STORAGE_KEY, c.code); } catch {}
+  };
+
   return (
     <CountryContext.Provider value={{ country, setCountry, countryList: COUNTRY_LIST }}>
       {children}
