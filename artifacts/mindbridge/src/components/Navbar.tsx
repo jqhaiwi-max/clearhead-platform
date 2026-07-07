@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, TrendingUp, Scale, Globe, Layers, UserPlus } from "lucide-react";
+import { Menu, X, ChevronDown, TrendingUp, Scale, Globe, Layers, UserPlus, ShieldCheck } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 
 export default function Navbar() {
@@ -23,6 +23,7 @@ export default function Navbar() {
     { href: "/simulator", label: t.nav.simulator, icon: TrendingUp, desc: lang === "ar" ? "نموذج الرسوم والأرباح" : "Fee & earnings model" },
     { href: "/contracts", label: t.nav.legal, icon: Scale, desc: lang === "ar" ? "شروط خاصة بالولاية القضائية" : "Jurisdiction-specific terms" },
     { href: "/add-doctor", label: t.nav.addDoctor, icon: UserPlus, desc: lang === "ar" ? "سجّل ممارستك" : "Register your practice" },
+    { href: "/admin", label: lang === "ar" ? "لوحة الإدارة" : "Admin Panel", icon: ShieldCheck, desc: lang === "ar" ? "الموافقات والإعدادات" : "Approvals & operations" },
   ];
 
   useEffect(() => {

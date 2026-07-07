@@ -6,7 +6,7 @@ import {
   paymentsTable,
   ratingsTable,
 } from "@workspace/db";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { eq, desc, count, sql, inArray } from "drizzle-orm";
 
 const router = Router();
 
@@ -114,6 +114,29 @@ router.delete("/payments/:id", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete payment" });
+  }
+});
+
+/* ── Bulk status update for appointments ── */
+router.patch("/appointments/bulk", async (req, res) => {
+  try {
+    const { ids, status } = req.body as { ids: unknown; status: unknown };
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ error: "ids must be a non-empty array" });
+    }
+    const valid = ["pending", "confirmed", "cancelled", "completed"];
+    if (typeof status !== "string" || !valid.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${valid.join(", ")}` });
+    }
+    const numIds = ids.map(Number).filter(n => !isNaN(n));
+    const updated = await db
+      .update(appointmentsTable)
+      .set({ status })
+      .where(inArray(appointmentsTable.id, numIds))
+      .returning();
+    res.json({ updated: updated.length, appointments: updated });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to bulk update appointments" });
   }
 });
 
