@@ -1,0 +1,21 @@
+name: Deploy to Replit
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notify Replit of new push
+        run: |
+          echo "✅ Push to main detected at $(date)"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo ""
+          echo "To deploy: open your Replit project and click 'Deploy'."
+          echo "Replit URL: https://replit.com/@jqhaiwi-max/clearhead-platform"
