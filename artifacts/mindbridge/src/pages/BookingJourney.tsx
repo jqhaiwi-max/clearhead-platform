@@ -678,21 +678,6 @@ export default function BookingJourney() {
                   </div>
                 )}
 
-                {/* Step 1: PHQ-9 intro */}
-                {step===1&&(
-                  <QCard intro>
-                    <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-5">
-                      <Heart className="w-6 h-6 text-blue-600"/>
-                    </div>
-                    <h3 className="font-serif text-2xl font-bold mb-3">{j.phq9IntroTitle}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed mb-4">{j.phq9IntroText}</p>
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 text-xs text-blue-700">
-                      <Shield className="w-4 h-4 flex-shrink-0 mt-0.5"/>
-                      {j.phq9Disclaimer}
-                    </div>
-                  </QCard>
-                )}
-
                 {/* Steps 2–10: PHQ-9 questions */}
                 {step>=2&&step<=10&&(()=>{
                   const qi=step-2;
@@ -1193,7 +1178,7 @@ export default function BookingJourney() {
       <div className="fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-sm border-t border-border/60 px-4 py-3 z-10">
         <div className={`${maxW} mx-auto flex items-center gap-3`}>
           {(phase>0||step>0)?(
-            <button onClick={()=>{ if(step>0){setStepDir(-1);setStep(s=>s-1);}else prevPhase();}}
+            <button onClick={()=>{ if(step>0){setStepDir(-1); const prev=phase===0&&step===2?0:step-1; setStep(prev);}else prevPhase();}}
               className="flex items-center gap-2 px-5 py-3 rounded-xl border-2 border-border bg-white text-foreground font-semibold text-sm hover:border-primary/40 transition-all flex-shrink-0">
               <ArrowLeft className="w-4 h-4"/> {j.backBtn}
             </button>
@@ -1247,7 +1232,13 @@ export default function BookingJourney() {
                     setShowNameErrors(false);
                   }
                   if(isLastInPhase) nextPhase();
-                  else{ setStepDir(1); setStep(s=>s+1); window.scrollTo({top:0,behavior:"smooth"}); }
+                  else{
+                    setStepDir(1);
+                    /* Skip the removed PHQ-9 intro step (step 1) */
+                    const next = phase===0&&step===0 ? 2 : step+1;
+                    setStep(next);
+                    window.scrollTo({top:0,behavior:"smooth"});
+                  }
                 }}
                 disabled={!canContinue}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all
