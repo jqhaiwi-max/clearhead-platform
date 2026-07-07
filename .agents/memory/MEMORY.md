@@ -3,3 +3,4 @@
 - [Clearhead booking journey](clearhead-booking.md) — Full 9-step wizard at `/get-started` (BookingJourney.tsx); `/checkout` is still standalone; provider deep-link via `?provider=ID` skips to step 4.
 - [Clearhead pricing.ts structure](clearhead-pricing.md) — CountryPricing type requires tiers[], taxRate, taxNote; auto-computed by buildCountry()/makeTiers(); formatPrice/toUSD must be exported.
 - [Clearhead DB constraints](clearhead-db.md) — appointments table has no duration column; slots endpoint uses drizzle and() for compound WHERE; POST /appointments checks for conflicts and returns 409.
+- [DOBPicker controlled input pattern](dobpicker-state.md) — multi-part date pickers must use internal useState per part; deriving from parent value prop resets selections on each partial change.

@@ -307,43 +307,44 @@ function TextField({ label, value, onChange, placeholder, type="text", required=
 function DOBPicker({ label, value, onChange }: {
   label: string; value: string; onChange: (v: string) => void;
 }) {
-  const parts = value ? value.split("-") : ["", "", ""];
-  const curYear  = parts[0] ?? "";
-  const curMonth = parts[1] ?? "";
-  const curDay   = parts[2] ?? "";
+  // Internal state — prevents each partial selection from resetting the others
+  const init = value ? value.split("-") : ["", "", ""];
+  const [month, setMonth] = useState(init[1] ?? "");
+  const [day,   setDay  ] = useState(init[2] ?? "");
+  const [year,  setYear ] = useState(init[0] ?? "");
 
   const emit = (y: string, m: string, d: string) => {
     if (y && m && d) onChange(`${y}-${m}-${d}`);
     else onChange("");
   };
 
-  const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
-  const days   = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
+  const months   = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+  const days     = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
   const thisYear = new Date().getFullYear();
-  const years  = Array.from({ length: 100 }, (_, i) => String(thisYear - 5 - i));
+  const years    = Array.from({ length: 100 }, (_, i) => String(thisYear - 5 - i));
 
   const selCls = "w-full appearance-none px-3 py-3 rounded-xl border-2 border-input bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary cursor-pointer";
 
   return (
     <div>
-      <label className="block text-xs font-semibold text-muted-foreground mb-1.5">{label}</label>
+      <label className="block text-xs font-semibold text-muted-foreground mb-1.5">{label}<span className="text-red-400 ms-0.5">*</span></label>
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <select value={curMonth} onChange={e => emit(curYear, e.target.value, curDay)} className={selCls}>
+          <select value={month} onChange={e => { setMonth(e.target.value); emit(year, e.target.value, day); }} className={selCls}>
             <option value="" disabled>MM</option>
             {months.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
         </div>
         <div className="relative flex-1">
-          <select value={curDay} onChange={e => emit(curYear, curMonth, e.target.value)} className={selCls}>
+          <select value={day} onChange={e => { setDay(e.target.value); emit(year, month, e.target.value); }} className={selCls}>
             <option value="" disabled>DD</option>
             {days.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
         </div>
         <div className="relative flex-[1.5]">
-          <select value={curYear} onChange={e => emit(e.target.value, curMonth, curDay)} className={selCls}>
+          <select value={year} onChange={e => { setYear(e.target.value); emit(e.target.value, month, day); }} className={selCls}>
             <option value="" disabled>YYYY</option>
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
@@ -749,7 +750,7 @@ export default function BookingJourney() {
                       <p className="text-muted-foreground text-sm">{j.profileSubtitle}</p>
                     </div>
                     <div className="bg-white rounded-2xl border border-border p-5 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <TextField label={j.firstNameLabel} value={firstName} onChange={v=>{setFirstName(v);if(v.trim())setShowNameErrors(false);}} placeholder={j.firstNamePH} required
                           error={showNameErrors&&!firstName.trim()?j.nameRequired??"Required":""}/>
                         <TextField label={j.lastNameLabel}  value={lastName}  onChange={v=>{setLastName(v);if(v.trim())setShowNameErrors(false);}}  placeholder={j.lastNamePH}  required
