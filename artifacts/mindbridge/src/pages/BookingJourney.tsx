@@ -780,20 +780,6 @@ export default function BookingJourney() {
                   </div>
                 )}
 
-                {step===2&&(
-                  <div className="space-y-5">
-                    <div>
-                      <h2 className="font-serif text-2xl font-bold mb-1">{j.emergencyTitle}</h2>
-                      <p className="text-muted-foreground text-sm">{j.emergencySubtitle}</p>
-                    </div>
-                    <div className="bg-white rounded-2xl border border-border p-5 space-y-4">
-                      <TextField label={j.emergencyNameLabel}  value={emergencyName}  onChange={setEmergencyName}  placeholder={j.emergencyNamePH}/>
-                      <TextField label={j.emergencyRelLabel}   value={emergencyRel}   onChange={setEmergencyRel}   placeholder={j.emergencyRelPH}/>
-                      <TextField label={j.emergencyPhoneLabel} value={emergencyPhone} onChange={setEmergencyPhone} placeholder={j.emergencyPhonePH} type="tel"/>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center">{j.emergencyNote}</p>
-                  </div>
-                )}
               </>
             )}
 
@@ -1203,13 +1189,13 @@ export default function BookingJourney() {
               return false;
             })();
 
-            const isLastInPhase = (phase===0&&step===11)||(phase===1&&step===2)||(phase===2&&step===0);
+            const isLastInPhase = (phase===0&&step===11)||(phase===1&&step===1)||(phase===2&&step===0);
             const isBookStep    = phase===3&&step===4;
 
             const label = (()=>{
               if(phase===0&&step===0)  return j.careTypeStart;
               if(phase===0&&step===11) return j.continueToProfile;
-              if(phase===1&&step===2)  return j.continueToPrefs;
+              if(phase===1&&step===1)  return j.continueToPrefs;
               if(phase===2&&step===0)  return j.findProvider;
               if(phase===3&&step===3)  return j.reviewBookingBtn;
               if(isBookStep)           return loading ? "…" : j.confirmBookBtn ?? "Confirm & Book";
