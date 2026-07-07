@@ -1042,7 +1042,7 @@ export default function BookingJourney() {
                     <div className="bg-white border border-border rounded-2xl p-4 space-y-2.5 text-sm">
                       <div className="flex justify-between"><span className="text-muted-foreground">{j.patientLabel}</span><span className="font-medium">{firstName} {lastName}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">{j.reviewDateLabel}</span><span className="font-medium">{formatDateLong(date)}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">{j.reviewTimeLabel}</span><span className="font-medium">{time}</span></div>
+                      <div className="flex justify-between"><span className="text-muted-foreground">{j.reviewTimeLabel}</span><span className="font-medium">{slotRange(time,duration)}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">{j.reviewFormatLabel}</span><span className="font-medium capitalize">{sessionFormat}</span></div>
                       <div className="flex justify-between"><span className="text-muted-foreground">{j.reviewCountryLabel}</span><span className="font-medium">{nationalityCountry.flag} {nationalityCountry.name}</span></div>
                       <div className="border-t border-border pt-2.5">
