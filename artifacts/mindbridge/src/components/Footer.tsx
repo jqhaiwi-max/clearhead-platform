@@ -1,12 +1,15 @@
 import { Link } from "wouter";
-
-const specialties = ["Anxiety & Stress", "Depression", "PTSD & Trauma", "ADHD", "Bipolar Disorder", "OCD", "Grief & Loss", "Addiction"];
+import { useLang } from "@/context/LanguageContext";
 
 export default function Footer() {
+  const { t, dir } = useLang();
+  const f = t.footer;
+
   return (
-    <footer className="bg-foreground text-primary-foreground">
+    <footer dir={dir} className="bg-foreground text-primary-foreground">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+          {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-5">
               <div className="w-9 h-9 rounded-xl bg-primary/30 flex items-center justify-center">
@@ -17,11 +20,9 @@ export default function Footer() {
               </div>
               <span className="font-serif font-bold text-xl text-white">Clearhead</span>
             </div>
-            <p className="text-white/60 text-sm leading-relaxed mb-6">
-              Board-certified psychiatric care, wherever you are in the world. Compassionate, discreet, and on your schedule.
-            </p>
-            <div className="flex gap-3">
-              {["Verified Providers", "HIPAA Secure", "24/7 Support"].map((badge) => (
+            <p className="text-white/60 text-sm leading-relaxed mb-6">{f.tagline}</p>
+            <div className="flex flex-wrap gap-2">
+              {f.badges.map((badge) => (
                 <span key={badge} className="text-xs px-2.5 py-1 rounded-full bg-white/10 text-white/70 border border-white/10">
                   {badge}
                 </span>
@@ -29,15 +30,11 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* Platform */}
           <div>
-            <h4 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Platform</h4>
+            <h4 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">{f.platformTitle}</h4>
             <ul className="space-y-3">
-              {[
-                { label: "Find a Provider", href: "/providers" },
-                { label: "Book a Session", href: "/book" },
-                { label: "My Appointments", href: "/appointments" },
-                { label: "Specialties", href: "/specialties" },
-              ].map((item) => (
+              {f.platformLinks.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="text-sm text-white/60 hover:text-white transition-colors">
                     {item.label}
@@ -47,11 +44,12 @@ export default function Footer() {
             </ul>
           </div>
 
+          {/* Specialties */}
           <div>
-            <h4 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Specialties</h4>
+            <h4 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">{f.specialtiesTitle}</h4>
             <ul className="space-y-3">
-              {specialties.slice(0, 6).map((s) => (
-                <li key={s}>
+              {f.specialties.map((s, i) => (
+                <li key={i}>
                   <Link href={`/providers?specialty=${encodeURIComponent(s)}`} className="text-sm text-white/60 hover:text-white transition-colors">
                     {s}
                   </Link>
@@ -60,30 +58,25 @@ export default function Footer() {
             </ul>
           </div>
 
+          {/* Support */}
           <div>
-            <h4 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Support</h4>
+            <h4 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">{f.supportTitle}</h4>
             <ul className="space-y-3">
-              {["Help Center", "Privacy Policy", "Terms of Service", "Crisis Resources", "Contact Us"].map((item) => (
+              {f.supportLinks.map((item) => (
                 <li key={item}>
                   <a href="#" className="text-sm text-white/60 hover:text-white transition-colors">{item}</a>
                 </li>
               ))}
             </ul>
             <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
-              <p className="text-xs text-white/50 leading-relaxed">
-                In crisis? Call or text 988 (Suicide & Crisis Lifeline) for immediate support 24/7.
-              </p>
+              <p className="text-xs text-white/50 leading-relaxed">{f.crisisNote}</p>
             </div>
           </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-white/40">
-            2024 Clearhead Health Inc. All rights reserved.
-          </p>
-          <p className="text-sm text-white/40">
-            Not for emergency services. If you are in crisis, call 911 or 988.
-          </p>
+          <p className="text-sm text-white/40">{f.copyright}</p>
+          <p className="text-sm text-white/40">{f.notEmergency}</p>
         </div>
       </div>
     </footer>

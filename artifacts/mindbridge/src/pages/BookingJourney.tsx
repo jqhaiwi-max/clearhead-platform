@@ -1088,7 +1088,7 @@ export default function BookingJourney() {
           )}
 
           {(()=>{
-            const isScreeningQ = phase===0&&step>=2&&step<=29;
+            const isScreeningQ = phase===0&&((step>=2&&step<=11)||(step>=13&&step<=21)||(step>=23&&step<=29));
             if(isScreeningQ) return <div className="flex-1 text-center text-xs text-muted-foreground">{j.tapToAnswer}</div>;
 
             const canContinue = (()=>{
