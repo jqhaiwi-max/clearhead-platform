@@ -287,17 +287,19 @@ function SelectField({ label, value, onChange, options, placeholder }: {
   );
 }
 
-function TextField({ label, value, onChange, placeholder, type="text", required=false }: {
+function TextField({ label, value, onChange, placeholder, type="text", required=false, error="" }: {
   label:string; value:string; onChange:(v:string)=>void;
-  placeholder?:string; type?:string; required?:boolean;
+  placeholder?:string; type?:string; required?:boolean; error?:string;
 }) {
   return (
     <div>
       <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-        {label}{required&&<span className="text-red-400 ml-0.5">*</span>}
+        {label}{required&&<span className="text-red-400 ms-0.5">*</span>}
       </label>
       <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-        className="w-full px-4 py-3 rounded-xl border-2 border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary"/>
+        className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary
+          ${error?"border-red-400 focus:ring-red-300":"border-input"}`}/>
+      {error&&<p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/>{error}</p>}
     </div>
   );
 }
@@ -329,6 +331,12 @@ function CheckGroup({ label, options, selected, onChange }: {
    UTILS
 ═══════════════════════════════════════════════════════════════ */
 const TIME_SLOTS = ["09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","19:00"];
+const SLOT_BY_PREF: Record<string,string[]> = {
+  morning:   TIME_SLOTS.filter(s=>parseInt(s)<12),
+  afternoon: TIME_SLOTS.filter(s=>{ const h=parseInt(s); return h>=12&&h<17; }),
+  evening:   TIME_SLOTS.filter(s=>parseInt(s)>=17),
+  any:       TIME_SLOTS,
+};
 
 function addMins(t: string, m: number) {
   const [h,min]=t.split(":").map(Number), tot=h*60+min+m;
@@ -394,6 +402,9 @@ export default function BookingJourney() {
   const [contactMethod,  setContactMethod ] = useState("email");
   const [contactDetail,  setContactDetail ] = useState("");
 
+  /* Validation */
+  const [showNameErrors, setShowNameErrors] = useState(false);
+
   /* Booking */
   const [country,        setCountry       ] = useState<CountryPricing>(globalCountry);
   const [provider,       setProvider      ] = useState<Provider|null>(null);
@@ -444,6 +455,14 @@ export default function BookingJourney() {
     setSlotsLoading(true); setTime("");
     fetchSlots(provider.id,date).then(s=>{setBookedSlots(s);setSlotsLoading(false);});
   },[date,provider]);
+
+  /* Auto-select first available slot matching timePref */
+  useEffect(()=>{
+    if(slotsLoading||!date||!provider||time)return;
+    const preferred = SLOT_BY_PREF[timePref]??TIME_SLOTS;
+    const firstAvail = preferred.find(s=>!bookedSlots.includes(s));
+    if(firstAvail) setTime(firstAvail);
+  },[slotsLoading,bookedSlots,timePref,date,provider]);
 
   /* Sync nationality → country */
   useEffect(()=>{
@@ -725,8 +744,10 @@ export default function BookingJourney() {
                     </div>
                     <div className="bg-white rounded-2xl border border-border p-5 space-y-4">
                       <div className="grid grid-cols-2 gap-4">
-                        <TextField label={j.firstNameLabel} value={firstName} onChange={setFirstName} placeholder={j.firstNamePH} required/>
-                        <TextField label={j.lastNameLabel}  value={lastName}  onChange={setLastName}  placeholder={j.lastNamePH} required/>
+                        <TextField label={j.firstNameLabel} value={firstName} onChange={v=>{setFirstName(v);if(v.trim())setShowNameErrors(false);}} placeholder={j.firstNamePH} required
+                          error={showNameErrors&&!firstName.trim()?j.nameRequired??"Required":""}/>
+                        <TextField label={j.lastNameLabel}  value={lastName}  onChange={v=>{setLastName(v);if(v.trim())setShowNameErrors(false);}}  placeholder={j.lastNamePH}  required
+                          error={showNameErrors&&!lastName.trim()?j.nameRequired??"Required":""}/>
                       </div>
                       <TextField label={j.dobLabel} value={dob} onChange={setDob} type="date"/>
                       <SelectField label={j.genderLabel} value={gender} onChange={setGender} options={j.genderOpts} placeholder="—"/>
@@ -823,12 +844,30 @@ export default function BookingJourney() {
                       );
                     })}
                   </div>
-                  <TextField
-                    label={contactMethod==="whatsapp"?j.whatsappInputLabel:j.emailInputLabel}
-                    value={contactDetail} onChange={setContactDetail}
-                    placeholder={contactMethod==="whatsapp"?j.whatsappPH:j.emailPH}
-                    type={contactMethod==="email"?"email":"tel"} required
-                  />
+                  {contactMethod==="whatsapp"?(
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                        {j.whatsappInputLabel}<span className="text-red-400 ms-0.5">*</span>
+                      </label>
+                      <div className="flex gap-2 items-stretch">
+                        <div className="flex items-center gap-1.5 px-3 rounded-xl border-2 border-input bg-muted text-sm font-mono flex-shrink-0 select-none">
+                          <span>{nationalityCountry.flag}</span>
+                          <span className="text-muted-foreground font-semibold">{nationalityCountry.dialCode}</span>
+                        </div>
+                        <input type="tel" value={contactDetail} onChange={e=>setContactDetail(e.target.value)}
+                          placeholder={j.whatsappPH}
+                          className="flex-1 px-4 py-3 rounded-xl border-2 border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary"/>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-1">{nationalityCountry.dialCode} + {j.localNumberHint??"local number"}</p>
+                    </div>
+                  ):(
+                    <TextField
+                      label={j.emailInputLabel}
+                      value={contactDetail} onChange={setContactDetail}
+                      placeholder={j.emailPH}
+                      type="email" required
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -977,44 +1016,87 @@ export default function BookingJourney() {
                 )}
 
                 {/* Step 3: Time */}
-                {step===3&&(
-                  <div className="space-y-4">
-                    <div>
-                      <h2 className="font-serif text-2xl font-bold mb-1">{j.timePickTitle}</h2>
-                      <p className="text-muted-foreground text-sm">{date?`${j.timePickSubtitleBase} ${formatDateLong(date)}`:j.timePickDateFirst}</p>
-                    </div>
-                    {slotsLoading?(
-                      <div className="flex items-center justify-center gap-3 py-16 text-muted-foreground text-sm">
-                        <span className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"/>
-                        {j.checkingSlots}
+                {step===3&&(()=>{
+                  const prefSlots  = timePref==="any"?[]:SLOT_BY_PREF[timePref]??[];
+                  const otherSlots = TIME_SLOTS.filter(s=>!prefSlots.includes(s));
+                  const prefLabel  = j.timeOpts?.find((o:{value:string;label:string})=>o.value===timePref)?.label ?? "";
+                  const SlotBtn = ({slot}:{slot:string})=>{
+                    const booked=bookedSlots.includes(slot),sel=time===slot;
+                    const range=slotRange(slot,duration);
+                    return (
+                      <button key={slot} disabled={booked} onClick={()=>!booked&&setTime(slot)}
+                        className={`py-2.5 px-1 rounded-xl border-2 text-xs font-medium transition-all leading-tight text-center
+                          ${sel?"border-primary bg-primary text-white shadow-md":""}
+                          ${booked?"border-border bg-muted/30 text-muted-foreground/40 cursor-not-allowed":""}
+                          ${!booked&&!sel?"border-border bg-white hover:border-primary/40 hover:-translate-y-0.5 text-foreground":""}`}>
+                        {booked
+                          ?<span className="flex flex-col items-center gap-0.5"><X className="w-3.5 h-3.5 text-red-400"/><span className="text-[9px] line-through">{slot}</span></span>
+                          :range}
+                      </button>
+                    );
+                  };
+                  return (
+                    <div className="space-y-4">
+                      <div>
+                        <h2 className="font-serif text-2xl font-bold mb-1">{j.timePickTitle}</h2>
+                        <p className="text-muted-foreground text-sm">{date?`${j.timePickSubtitleBase} ${formatDateLong(date)}`:j.timePickDateFirst}</p>
                       </div>
-                    ):(
-                      <>
-                        {bookedSlots.length>0&&(
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                            <X className="w-3 h-3 text-red-400"/>
-                            {bookedSlots.length} {bookedSlots.length>1?j.bookedSlotsPluralNote:j.bookedSlotsNote}
-                          </div>
-                        )}
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                          {TIME_SLOTS.map(slot=>{
-                            const booked=bookedSlots.includes(slot),sel=time===slot;
-                            const range=slotRange(slot,duration);
-                            return (
-                              <button key={slot} disabled={booked} onClick={()=>!booked&&setTime(slot)}
-                                className={`py-2.5 px-1 rounded-xl border-2 text-xs font-medium transition-all leading-tight text-center
-                                  ${sel?"border-primary bg-primary text-white shadow-md":""}
-                                  ${booked?"border-border bg-muted/30 text-muted-foreground/40 cursor-not-allowed":""}
-                                  ${!booked&&!sel?"border-border bg-white hover:border-primary/40 text-foreground":""}`}>
-                                {booked?<span className="flex flex-col items-center gap-0.5"><X className="w-3.5 h-3.5 text-red-400"/><span className="text-[9px] line-through">{slot}</span></span>:range}
-                              </button>
-                            );
-                          })}
+                      {slotsLoading?(
+                        <div className="flex items-center justify-center gap-3 py-16 text-muted-foreground text-sm">
+                          <span className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"/>
+                          {j.checkingSlots}
                         </div>
-                      </>
-                    )}
-                  </div>
-                )}
+                      ):(
+                        <div className="space-y-4">
+                          {bookedSlots.length>0&&(
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <X className="w-3 h-3 text-red-400"/>
+                              {bookedSlots.length} {bookedSlots.length>1?j.bookedSlotsPluralNote:j.bookedSlotsNote}
+                            </div>
+                          )}
+
+                          {/* Preferred slots section */}
+                          {prefSlots.length>0&&(
+                            <div className="bg-primary/5 rounded-2xl p-4 border border-primary/15 space-y-2">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="text-sm">⭐</span>
+                                <span className="text-xs font-semibold text-primary uppercase tracking-widest">{j.preferredTimesLabel??"Your preferred time"} · {prefLabel}</span>
+                              </div>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                {prefSlots.map(slot=><SlotBtn key={slot} slot={slot}/>)}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Other slots */}
+                          {(timePref==="any"?TIME_SLOTS:otherSlots).length>0&&(
+                            <div className="space-y-2">
+                              {timePref!=="any"&&(
+                                <div className="flex items-center gap-3">
+                                  <div className="flex-1 h-px bg-border"/>
+                                  <span className="text-xs text-muted-foreground font-medium">{j.otherTimesLabel??"Other times"}</span>
+                                  <div className="flex-1 h-px bg-border"/>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                {(timePref==="any"?TIME_SLOTS:otherSlots).map(slot=><SlotBtn key={slot} slot={slot}/>)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {time&&(
+                        <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}
+                          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary/10 border border-primary/20">
+                          <Calendar className="w-4 h-4 text-primary"/>
+                          <span className="text-sm font-medium text-primary">{slotRange(time,duration)}</span>
+                          <Check className="w-4 h-4 text-primary ms-auto"/>
+                        </motion.div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Step 4: Review */}
                 {step===4&&(
@@ -1110,7 +1192,7 @@ export default function BookingJourney() {
               if(phase===0&&step===0)  return !!careType;
               if(phase===0&&step===11) return true;
               if(phase===0)            return true;
-              if(phase===1&&step===0)  return firstName.trim().length>=1&&lastName.trim().length>=1;
+              if(phase===1&&step===0)  return true;
               if(phase===1)            return true;
               if(phase===2)            return contactDetail.trim().length>=3;
               if(phase===3&&step===0)  return !!provider && !providersLoading;
@@ -1138,6 +1220,10 @@ export default function BookingJourney() {
               <button
                 onClick={()=>{
                   if(isBookStep){ handleBook(); return; }
+                  if(phase===1&&step===0){
+                    if(!firstName.trim()||!lastName.trim()){ setShowNameErrors(true); return; }
+                    setShowNameErrors(false);
+                  }
                   if(isLastInPhase) nextPhase();
                   else{ setStepDir(1); setStep(s=>s+1); window.scrollTo({top:0,behavior:"smooth"}); }
                 }}
