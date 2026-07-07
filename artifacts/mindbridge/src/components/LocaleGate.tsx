@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Check, ChevronRight, Globe, Leaf } from "lucide-react";
+import { Search, Check, ChevronRight, Globe, Leaf, MapPin } from "lucide-react";
 import { useLang, type Lang } from "@/context/LanguageContext";
 import { useCountry } from "@/context/CountryContext";
 import { COUNTRY_LIST } from "@/lib/pricing";
@@ -66,12 +66,27 @@ export default function LocaleGate() {
   const [selectedLang, setSelectedLang] = useState<string>(lang);
   const [countryQ, setCountryQ]   = useState("");
   const [selectedCountry, setSelectedCountry] = useState(country);
+  const [geoLoading, setGeoLoading] = useState(false);
 
-  /* Show once per session on every page (except /admin) */
+  /* Show once per session on every page (except /admin) + auto-detect country from IP */
   useEffect(() => {
     if (window.location.pathname.includes("/admin")) return;
     const sessionDone = sessionStorage.getItem(SESSION_KEY);
-    if (!sessionDone) setVisible(true);
+    if (!sessionDone) {
+      setVisible(true);
+      /* Detect country from visitor IP using ipapi.co */
+      setGeoLoading(true);
+      fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(4000) })
+        .then(r => r.json())
+        .then((data: { country_code?: string }) => {
+          if (data.country_code) {
+            const match = COUNTRY_LIST.find(c => c.code === data.country_code);
+            if (match) setSelectedCountry(match);
+          }
+        })
+        .catch(() => { /* silently fall back to default */ })
+        .finally(() => setGeoLoading(false));
+    }
   }, []);
 
   const c = getCopy(selectedLang);
@@ -197,6 +212,18 @@ export default function LocaleGate() {
                     <div className="mb-4">
                       <div className="font-semibold text-sm text-foreground mb-0.5">{c.countryTitle}</div>
                       <div className="text-xs text-muted-foreground">{c.countrySub}</div>
+                      {/* IP detection status */}
+                      {geoLoading ? (
+                        <div className="flex items-center gap-1.5 mt-2 text-[11px] text-muted-foreground">
+                          <span className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin inline-block"/>
+                          Detecting your location…
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 mt-2 text-[11px] text-emerald-600 font-medium">
+                          <MapPin className="w-3 h-3"/>
+                          {selectedCountry.flag} {selectedCountry.name} detected from your connection
+                        </div>
+                      )}
                     </div>
 
                     {/* Search */}
