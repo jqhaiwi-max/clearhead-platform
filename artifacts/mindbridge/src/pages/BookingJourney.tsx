@@ -2,14 +2,14 @@
  * Clearhead – Full Clinical Intake + Booking Journey (fully localised)
  * Phase 1: Screening · Phase 2: Profile · Phase 3: Preferences · Phase 4: Book
  */
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Check, X, Star, Calendar, ChevronLeft,
   ChevronRight, User, Tag, MessageCircle, Copy, Shield,
   CheckCircle, Search, AlertCircle, Leaf, Sparkles,
-  Heart, Brain, Users, Baby,
+  Heart, Brain, Users, Baby, Hash, Video,
 } from "lucide-react";
 import { useListProviders } from "@workspace/api-client-react";
 import {
@@ -19,20 +19,22 @@ import {
 import { useCountry } from "@/context/CountryContext";
 import { useLang } from "@/context/LanguageContext";
 
+function generatePatientId(): string {
+  return `CLR-${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
 const BASE = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 
 /* ═══════════════════════════════════════════════════════════════
    SCORING
 ═══════════════════════════════════════════════════════════════ */
-type Scores  = { k10: number; phq9: number; gad7: number; hasRisk: boolean };
-type RecKey  = "couples"|"children"|"psychiatrist"|"psychiatristComorbid"|"therapistDepression"|"therapistAnxiety"|"counselor";
+type Scores  = { phq9: number; hasRisk: boolean };
+type RecKey  = "couples"|"children"|"psychiatrist"|"therapistDepression"|"counselor";
 type RecMeta = { key: RecKey; specialty: string; urgent: boolean; color: string };
 
-function computeScores(k10: Record<number,number>, phq9: Record<number,number>, gad7: Record<number,number>): Scores {
+function computeScores(phq9: Record<number,number>): Scores {
   return {
-    k10:     Object.values(k10).reduce((a,b)=>a+b,0),
     phq9:    Object.values(phq9).reduce((a,b)=>a+b,0),
-    gad7:    Object.values(gad7).reduce((a,b)=>a+b,0),
     hasRisk: (phq9[8]??0) >= 1,
   };
 }
@@ -40,12 +42,10 @@ function computeScores(k10: Record<number,number>, phq9: Record<number,number>, 
 function getRecMeta(scores: Scores, careType: string): RecMeta {
   if (careType === "couples")  return { key:"couples",  specialty:"Couples",  urgent:false, color:"teal" };
   if (careType === "children") return { key:"children", specialty:"Child",    urgent:false, color:"violet" };
-  const { k10, phq9, gad7, hasRisk } = scores;
-  if (hasRisk||phq9>=15||k10>=30)  return { key:"psychiatrist",         specialty:"Psychiatr", urgent:hasRisk, color:"red" };
-  if (phq9>=10&&gad7>=10)          return { key:"psychiatristComorbid", specialty:"Psychiatr", urgent:false,   color:"orange" };
-  if (phq9>=10)                    return { key:"therapistDepression",  specialty:"",          urgent:false,   color:"amber" };
-  if (gad7>=10)                    return { key:"therapistAnxiety",     specialty:"",          urgent:false,   color:"amber" };
-  return                                  { key:"counselor",            specialty:"",          urgent:false,   color:"emerald" };
+  const { phq9, hasRisk } = scores;
+  if (hasRisk || phq9 >= 15) return { key:"psychiatrist",        specialty:"Psychiatr", urgent:hasRisk, color:"red" };
+  if (phq9 >= 10)             return { key:"therapistDepression", specialty:"",          urgent:false,   color:"amber" };
+  return                             { key:"counselor",           specialty:"",          urgent:false,   color:"emerald" };
 }
 
 function scoreLevelIndex(val: number, thresholds: number[]): number {
@@ -330,6 +330,12 @@ function CheckGroup({ label, options, selected, onChange }: {
 ═══════════════════════════════════════════════════════════════ */
 const TIME_SLOTS = ["09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","19:00"];
 
+function addMins(t: string, m: number) {
+  const [h,min]=t.split(":").map(Number), tot=h*60+min+m;
+  return `${String(Math.floor(tot/60)%24).padStart(2,"0")}:${String(tot%60).padStart(2,"0")}`;
+}
+function slotRange(start: string, dur: number){ return `${start}–${addMins(start,dur)}`; }
+
 function formatDateLong(str:string) {
   if (!str) return "";
   const [y,m,d]=str.split("-").map(Number);
@@ -361,10 +367,8 @@ export default function BookingJourney() {
   /* Care type */
   const [careType, setCareType] = useState("");
 
-  /* Screening answers */
-  const [k10,  setK10 ] = useState<Record<number,number>>({});
+  /* Screening answers — PHQ-9 only */
   const [phq9, setPhq9] = useState<Record<number,number>>({});
-  const [gad7, setGad7] = useState<Record<number,number>>({});
 
   /* Profile */
   const [firstName,      setFirstName     ] = useState("");
@@ -407,9 +411,11 @@ export default function BookingJourney() {
   const [done,           setDone          ] = useState(false);
   const [copied,         setCopied        ] = useState(false);
   const [provSearch,     setProvSearch    ] = useState("");
+  const patientIdRef = useRef(generatePatientId());
+  const patientId    = patientIdRef.current;
 
   /* Derived */
-  const scores = computeScores(k10, phq9, gad7);
+  const scores = computeScores(phq9);
   const rec    = getRecMeta(scores, careType);
   const recText = j.recommendations[rec.key];
   const nationalityCountry = COUNTRY_LIST.find(c=>c.code===nationality) ?? globalCountry;
@@ -458,18 +464,10 @@ export default function BookingJourney() {
     setStepDir(-1); setPhase(p=>p-1); setStep(999);
   },[]);
 
-  /* Questionnaire auto-advance */
-  const answerK10 = useCallback((qi:number,val:number)=>{
-    setK10(prev=>({...prev,[qi]:val}));
-    setTimeout(()=>{ setStepDir(1); setStep(qi<9?2+qi+1:12); },380);
-  },[]);
+  /* Questionnaire auto-advance — PHQ-9 only (steps 2–10, then 11=results) */
   const answerPhq9 = useCallback((qi:number,val:number)=>{
     setPhq9(prev=>({...prev,[qi]:val}));
-    setTimeout(()=>{ setStepDir(1); setStep(qi<8?13+qi+1:22); },380);
-  },[]);
-  const answerGad7 = useCallback((qi:number,val:number)=>{
-    setGad7(prev=>({...prev,[qi]:val}));
-    setTimeout(()=>{ setStepDir(1); setStep(qi<6?23+qi+1:30); },380);
+    setTimeout(()=>{ setStepDir(1); setStep(qi<8?2+qi+1:11); },380);
   },[]);
 
   /* Promo */
@@ -480,16 +478,24 @@ export default function BookingJourney() {
     else{setPromo(null);setPromoErr(j.invalidPromo);}
   };
 
+  const ADMIN_WA = "00962770403270";
+
   /* Book */
   const handleBook = async () => {
     if(!provider||!date||!time)return;
     setLoading(true); setBookErr("");
     try {
       await bookAppointment({
-        patientName: `${firstName} ${lastName}`.trim(),
-        patientEmail: contactDetail||`${firstName.toLowerCase()}@example.com`,
+        patientName:  patientId,
+        patientEmail: contactMethod==="email" ? contactDetail : `patient+${patientId.toLowerCase()}@clearhead.app`,
         providerId: provider.id, date, time, type: sessionFormat,
-        notes:[promo?`Promo: ${promo.code}`:"",careType,prevDx.join(", ")].filter(Boolean).join(" | "),
+        notes:[
+          `PatientID:${patientId}`,
+          `Name:${firstName} ${lastName}`,
+          `Contact:${contactDetail}`,
+          promo?`Promo:${promo.code}`:"",
+          careType, prevDx.join(", "),
+        ].filter(Boolean).join(" | "),
       });
       setDone(true);
     } catch(e:any){setBookErr(e.message);}
@@ -497,28 +503,60 @@ export default function BookingJourney() {
   };
 
   /* ─── SUCCESS ─── */
+  const adminMsg = provider ? [
+    `🏥 *New Clearhead Booking — Pending Approval*`,
+    `Patient ID: *${patientId}*`,
+    `Provider: *${provider.name}*`,
+    `Date: ${formatDateLong(date)} at ${time}`,
+    `Duration: ${duration} min`,
+    `Care type: ${careType}`,
+    ``,
+    `Reply APPROVE or REJECT.`,
+  ].join("\n") : "";
+
   if (done) return (
     <div dir={dir} className="min-h-screen bg-gradient-to-br from-[hsl(158,40%,97%)] to-[hsl(188,30%,95%)] flex items-center justify-center px-4">
       <motion.div initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} className="w-full max-w-md">
         <div className="bg-white rounded-3xl shadow-xl p-8 text-center">
           <motion.div initial={{scale:0}} animate={{scale:1}} transition={{type:"spring",delay:0.1}}
-            className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-5">
-            <CheckCircle className="w-10 h-10 text-emerald-600"/>
+            className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-5">
+            <CheckCircle className="w-10 h-10 text-amber-600"/>
           </motion.div>
           <h2 className="font-serif text-2xl font-bold mb-1">{j.successTitle}</h2>
-          <p className="text-muted-foreground text-sm mb-5">{j.successSub} <span className="font-semibold">{provider?.name}</span></p>
-          <div className="bg-muted/40 rounded-2xl p-4 text-left space-y-2 text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-3">{j.successSub} <span className="font-semibold">{provider?.name}</span></p>
+
+          {/* Patient ID badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-5">
+            <Hash className="w-4 h-4 text-primary"/>
+            <span className="font-mono font-bold text-primary tracking-wider">{patientId}</span>
+          </div>
+
+          <div className="bg-muted/40 rounded-2xl p-4 text-start space-y-2 text-sm mb-4">
+            <div className="flex justify-between"><span className="text-muted-foreground">Patient ID</span><span className="font-mono font-bold text-primary">{patientId}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">{j.successDateLabel}</span><span className="font-medium">{formatDateLong(date)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">{j.successTimeLabel}</span><span className="font-medium">{time}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">{j.successTimeLabel}</span><span className="font-medium">{slotRange(time,duration)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">{j.successDurationLabel}</span><span className="font-medium">{duration} {j.minuteLabel}</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted-foreground">Video call</span><span className="font-medium flex items-center gap-1"><Video className="w-3.5 h-3.5 text-primary"/>Doxy.me</span></div>
             <div className="flex justify-between border-t border-border pt-2 font-bold">
               <span>{j.successTotalLabel}</span><span className="text-primary">{formatPrice(total,country)}</span>
             </div>
           </div>
+
+          {/* Doxy.me note */}
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-xs text-start mb-4">
+            <Video className="w-4 h-4 flex-shrink-0 mt-0.5"/>
+            Your provider will send a Doxy.me room link before your session — no download required.
+          </div>
+
           <div className="space-y-3">
-            <a href={`https://wa.me/?text=${encodeURIComponent(`I just booked a ${duration}-min session with ${provider?.name} on ${formatDateLong(date)} at ${time}.`)}`}
+            <a href={`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(adminMsg)}`}
               target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[#25D366] text-white font-semibold hover:brightness-105 shadow">
+              <MessageCircle className="w-5 h-5"/> Notify admin for approval
+            </a>
+            <a href={`https://wa.me/?text=${encodeURIComponent(`I just booked a ${duration}-min session with ${provider?.name} on ${formatDateLong(date)} at ${time}.`)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-[#25D366] text-[#25D366] font-semibold hover:bg-[#25D366]/10">
               <MessageCircle className="w-5 h-5"/> {j.shareBtn}
             </a>
             <button onClick={()=>{navigator.clipboard.writeText("https://clearhead.app/get-started");setCopied(true);setTimeout(()=>setCopied(false),2000);}}
@@ -602,48 +640,24 @@ export default function BookingJourney() {
                   </div>
                 )}
 
-                {/* Step 1: K10 intro */}
+                {/* Step 1: PHQ-9 intro */}
                 {step===1&&(
-                  <QCard intro>
-                    <div className="w-12 h-12 rounded-2xl bg-violet-100 flex items-center justify-center mb-5">
-                      <Brain className="w-6 h-6 text-violet-600"/>
-                    </div>
-                    <h3 className="font-serif text-2xl font-bold mb-3">{j.k10IntroTitle}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed mb-4">{j.k10IntroText}</p>
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 text-xs text-muted-foreground">
-                      <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary"/>
-                      {j.k10Privacy}
-                    </div>
-                  </QCard>
-                )}
-
-                {/* Steps 2–11: K10 questions */}
-                {step>=2&&step<=11&&(()=>{
-                  const qi=step-2;
-                  return (
-                    <QCard qNum={qi+1} qTotal={10}>
-                      <p className="text-xs font-semibold text-violet-600 uppercase tracking-widest mb-3">{j.k10Badge}</p>
-                      <p className="font-serif text-xl font-semibold text-foreground leading-snug">{j.k10Qs[qi]}</p>
-                      <LikertRow scale={j.k10Scale} selected={k10[qi]} onSelect={v=>answerK10(qi,v)} cols={5}/>
-                    </QCard>
-                  );
-                })()}
-
-                {/* Step 12: PHQ-9 intro */}
-                {step===12&&(
                   <QCard intro>
                     <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center mb-5">
                       <Heart className="w-6 h-6 text-blue-600"/>
                     </div>
                     <h3 className="font-serif text-2xl font-bold mb-3">{j.phq9IntroTitle}</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed mb-4">{j.phq9IntroText}</p>
-                    <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">{j.phq9Disclaimer}</div>
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 text-xs text-blue-700">
+                      <Shield className="w-4 h-4 flex-shrink-0 mt-0.5"/>
+                      {j.phq9Disclaimer}
+                    </div>
                   </QCard>
                 )}
 
-                {/* Steps 13–21: PHQ-9 */}
-                {step>=13&&step<=21&&(()=>{
-                  const qi=step-13;
+                {/* Steps 2–10: PHQ-9 questions */}
+                {step>=2&&step<=10&&(()=>{
+                  const qi=step-2;
                   return (
                     <QCard qNum={qi+1} qTotal={9}>
                       <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-3">{j.phq9Badge}</p>
@@ -657,32 +671,8 @@ export default function BookingJourney() {
                   );
                 })()}
 
-                {/* Step 22: GAD-7 intro */}
-                {step===22&&(
-                  <QCard intro>
-                    <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center mb-5">
-                      <AlertCircle className="w-6 h-6 text-amber-600"/>
-                    </div>
-                    <h3 className="font-serif text-2xl font-bold mb-3">{j.gad7IntroTitle}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{j.gad7IntroText}</p>
-                  </QCard>
-                )}
-
-                {/* Steps 23–29: GAD-7 */}
-                {step>=23&&step<=29&&(()=>{
-                  const qi=step-23;
-                  return (
-                    <QCard qNum={qi+1} qTotal={7}>
-                      <p className="text-xs font-semibold text-amber-600 uppercase tracking-widest mb-3">{j.gad7Badge}</p>
-                      <p className="text-sm text-muted-foreground mb-1">{j.phq9Header}</p>
-                      <p className="font-serif text-xl font-semibold text-foreground leading-snug">{j.gad7Qs[qi]}</p>
-                      <LikertRow scale={j.phqScale} selected={gad7[qi]} onSelect={v=>answerGad7(qi,v)} cols={4}/>
-                    </QCard>
-                  );
-                })()}
-
-                {/* Step 30: Results */}
-                {step===30&&(
+                {/* Step 11: Results */}
+                {step===11&&(
                   <div className="space-y-5">
                     <div>
                       <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">{j.resultsPhase}</p>
@@ -699,9 +689,7 @@ export default function BookingJourney() {
                       </div>
                     )}
                     <div className="bg-white rounded-2xl border border-border p-5 space-y-4">
-                      <ScoreBar label={j.scoreLabels[0]} val={scores.k10}  max={50} thresholds={[20,25,30]} levels={j.scoreLevels}/>
-                      <ScoreBar label={j.scoreLabels[1]} val={scores.phq9} max={27} thresholds={[5,10,15]}  levels={j.scoreLevels}/>
-                      <ScoreBar label={j.scoreLabels[2]} val={scores.gad7} max={21} thresholds={[5,10,15]}  levels={j.scoreLevels}/>
+                      <ScoreBar label="PHQ-9 · Depression" val={scores.phq9} max={27} thresholds={[5,10,15]} levels={j.scoreLevels}/>
                     </div>
                     <div className={`rounded-2xl p-5 border-2 ${
                       rec.urgent?"border-red-200 bg-red-50":
@@ -977,16 +965,17 @@ export default function BookingJourney() {
                             {bookedSlots.length} {bookedSlots.length>1?j.bookedSlotsPluralNote:j.bookedSlotsNote}
                           </div>
                         )}
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                           {TIME_SLOTS.map(slot=>{
                             const booked=bookedSlots.includes(slot),sel=time===slot;
+                            const range=slotRange(slot,duration);
                             return (
                               <button key={slot} disabled={booked} onClick={()=>!booked&&setTime(slot)}
-                                className={`py-3 rounded-xl border-2 text-sm font-medium transition-all
+                                className={`py-2.5 px-1 rounded-xl border-2 text-xs font-medium transition-all leading-tight text-center
                                   ${sel?"border-primary bg-primary text-white shadow-md":""}
                                   ${booked?"border-border bg-muted/30 text-muted-foreground/40 cursor-not-allowed":""}
                                   ${!booked&&!sel?"border-border bg-white hover:border-primary/40 text-foreground":""}`}>
-                                {booked?<span className="flex flex-col items-center gap-0.5"><X className="w-3.5 h-3.5 text-red-400"/><span className="text-[9px] line-through">{slot}</span></span>:slot}
+                                {booked?<span className="flex flex-col items-center gap-0.5"><X className="w-3.5 h-3.5 text-red-400"/><span className="text-[9px] line-through">{slot}</span></span>:range}
                               </button>
                             );
                           })}
@@ -1088,12 +1077,12 @@ export default function BookingJourney() {
           )}
 
           {(()=>{
-            const isScreeningQ = phase===0&&((step>=2&&step<=11)||(step>=13&&step<=21)||(step>=23&&step<=29));
+            const isScreeningQ = phase===0&&(step>=2&&step<=10);
             if(isScreeningQ) return <div className="flex-1 text-center text-xs text-muted-foreground">{j.tapToAnswer}</div>;
 
             const canContinue = (()=>{
               if(phase===0&&step===0) return !!careType;
-              if(phase===0&&step===30) return true;
+              if(phase===0&&step===11) return true;
               if(phase===0) return true;
               if(phase===1&&step===0) return firstName.trim().length>=1&&lastName.trim().length>=1;
               if(phase===1) return true;
@@ -1105,11 +1094,11 @@ export default function BookingJourney() {
               return true;
             })();
 
-            const isLastInPhase = (phase===0&&step===30)||(phase===1&&step===2)||(phase===2&&step===0);
+            const isLastInPhase = (phase===0&&step===11)||(phase===1&&step===2)||(phase===2&&step===0);
 
             const label = (()=>{
               if(phase===0&&step===0) return j.careTypeStart;
-              if(phase===0&&step===30) return j.continueToProfile;
+              if(phase===0&&step===11) return j.continueToProfile;
               if(phase===1&&step===2) return j.continueToPrefs;
               if(phase===2&&step===0) return j.findProvider;
               if(phase===3&&step===3) return j.reviewBookingBtn;
