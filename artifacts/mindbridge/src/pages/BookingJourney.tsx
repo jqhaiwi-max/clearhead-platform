@@ -7,7 +7,7 @@ import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, ArrowRight, Check, X, Star, Calendar, ChevronLeft,
-  ChevronRight, User, Tag, MessageCircle, Copy, Shield,
+  ChevronRight, ChevronDown, User, Tag, MessageCircle, Copy, Shield,
   CheckCircle, Search, AlertCircle, Leaf, Sparkles,
   Heart, Brain, Users, Baby, Hash, Video,
 } from "lucide-react";
@@ -300,6 +300,56 @@ function TextField({ label, value, onChange, placeholder, type="text", required=
         className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary
           ${error?"border-red-400 focus:ring-red-300":"border-input"}`}/>
       {error&&<p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/>{error}</p>}
+    </div>
+  );
+}
+
+function DOBPicker({ label, value, onChange }: {
+  label: string; value: string; onChange: (v: string) => void;
+}) {
+  const parts = value ? value.split("-") : ["", "", ""];
+  const curYear  = parts[0] ?? "";
+  const curMonth = parts[1] ?? "";
+  const curDay   = parts[2] ?? "";
+
+  const emit = (y: string, m: string, d: string) => {
+    if (y && m && d) onChange(`${y}-${m}-${d}`);
+    else onChange("");
+  };
+
+  const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+  const days   = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
+  const thisYear = new Date().getFullYear();
+  const years  = Array.from({ length: 100 }, (_, i) => String(thisYear - 5 - i));
+
+  const selCls = "w-full appearance-none px-3 py-3 rounded-xl border-2 border-input bg-white text-sm text-center focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary cursor-pointer";
+
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-muted-foreground mb-1.5">{label}</label>
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <select value={curMonth} onChange={e => emit(curYear, e.target.value, curDay)} className={selCls}>
+            <option value="" disabled>MM</option>
+            {months.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+        </div>
+        <div className="relative flex-1">
+          <select value={curDay} onChange={e => emit(curYear, curMonth, e.target.value)} className={selCls}>
+            <option value="" disabled>DD</option>
+            {days.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+        </div>
+        <div className="relative flex-[1.5]">
+          <select value={curYear} onChange={e => emit(e.target.value, curMonth, curDay)} className={selCls}>
+            <option value="" disabled>YYYY</option>
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -753,7 +803,7 @@ export default function BookingJourney() {
                         <TextField label={j.lastNameLabel}  value={lastName}  onChange={v=>{setLastName(v);if(v.trim())setShowNameErrors(false);}}  placeholder={j.lastNamePH}  required
                           error={showNameErrors&&!lastName.trim()?j.nameRequired??"Required":""}/>
                       </div>
-                      <TextField label={j.dobLabel} value={dob} onChange={setDob} type="date"/>
+                      <DOBPicker label={j.dobLabel} value={dob} onChange={setDob}/>
                       <SelectField label={j.genderLabel} value={gender} onChange={setGender} options={j.genderOpts} placeholder="—"/>
                       <div>
                         <label className="block text-xs font-semibold text-muted-foreground mb-1.5">{j.nationalityLabel}</label>
