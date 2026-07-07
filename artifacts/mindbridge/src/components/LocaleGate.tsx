@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Check, ChevronRight, Globe, Leaf } from "lucide-react";
-import { useLocation } from "wouter";
 import { useLang, type Lang } from "@/context/LanguageContext";
 import { useCountry } from "@/context/CountryContext";
 import { COUNTRY_LIST } from "@/lib/pricing";
 
-const STORAGE_KEY  = "clearhead_locale_set";      // localStorage — first-ever visit
-const SESSION_KEY  = "clearhead_locale_session";   // sessionStorage — general first-in-session
-const JOURNEY_KEY  = "clearhead_locale_journey";   // sessionStorage — /get-started per-session
+const SESSION_KEY  = "clearhead_locale_session";   // sessionStorage — shown once per session on any page
 
 /* ─── Available languages ────────────────────────────────────── */
 const LANGUAGES: {
@@ -63,7 +60,6 @@ function getCopy(lang: string) {
 export default function LocaleGate() {
   const { lang, setLang } = useLang();
   const { country, setCountry } = useCountry();
-  const [location] = useLocation();
 
   const [visible, setVisible]     = useState(false);
   const [page, setPage]           = useState<"lang" | "country">("lang");
@@ -71,23 +67,15 @@ export default function LocaleGate() {
   const [countryQ, setCountryQ]   = useState("");
   const [selectedCountry, setSelectedCountry] = useState(country);
 
-  /* Show on first-ever visit globally; also once per session when entering /get-started */
+  /* Show once per session on every page (except /admin) */
   useEffect(() => {
-    if (location.startsWith("/admin")) return;
-    const isJourney = location.startsWith("/get-started") || location.startsWith("/book-now");
-    if (isJourney) {
-      const journeyDone = sessionStorage.getItem(JOURNEY_KEY);
-      if (!journeyDone) { setVisible(true); return; }
-    } else {
-      const globalDone = localStorage.getItem(STORAGE_KEY);
-      const sessionDone = sessionStorage.getItem(SESSION_KEY);
-      if (!globalDone && !sessionDone) setVisible(true);
-    }
-  }, [location]);
+    if (window.location.pathname.includes("/admin")) return;
+    const sessionDone = sessionStorage.getItem(SESSION_KEY);
+    if (!sessionDone) setVisible(true);
+  }, []);
 
   const c = getCopy(selectedLang);
   const isRtl = LANGUAGES.find(l => l.code === selectedLang)?.dir === "rtl";
-  const isJourney = location.startsWith("/get-started") || location.startsWith("/book-now");
 
   const filteredCountries = COUNTRY_LIST.filter(ct =>
     !countryQ ||
@@ -100,16 +88,12 @@ export default function LocaleGate() {
       setLang(selectedLang as Lang);
     }
     setCountry(selectedCountry);
-    localStorage.setItem(STORAGE_KEY, "1");
     sessionStorage.setItem(SESSION_KEY, "1");
-    if (isJourney) sessionStorage.setItem(JOURNEY_KEY, "1");
     setVisible(false);
   };
 
   const skip = () => {
-    localStorage.setItem(STORAGE_KEY, "1");
     sessionStorage.setItem(SESSION_KEY, "1");
-    if (isJourney) sessionStorage.setItem(JOURNEY_KEY, "1");
     setVisible(false);
   };
 
