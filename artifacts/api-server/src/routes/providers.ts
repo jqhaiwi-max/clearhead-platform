@@ -78,4 +78,42 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.put("/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const body = req.body as Record<string, unknown>;
+    const allowed = [
+      "name","title","specialty","bio","yearsExperience","imageUrl","available",
+      "sessionPrice","languages","acceptsInsurance","nextAvailable",
+      "email","phone","qualifications","doxyLink","rating","reviewCount",
+    ];
+    const update: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (key in body) update[key] = body[key];
+    }
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ error: "No valid fields to update" });
+    }
+    const [provider] = await db
+      .update(providersTable)
+      .set(update as Parameters<typeof db.update>[0] extends infer T ? T : never)
+      .where(eq(providersTable.id, id))
+      .returning();
+    if (!provider) return res.status(404).json({ error: "Provider not found" });
+    res.json(provider);
+  } catch (err) {
+    res.status(400).json({ error: "Failed to update provider" });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await db.delete(providersTable).where(eq(providersTable.id, id));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete provider" });
+  }
+});
+
 export default router;

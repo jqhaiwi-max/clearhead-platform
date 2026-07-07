@@ -21,13 +21,14 @@ import Simulator from "@/pages/Simulator";
 import Contracts from "@/pages/Contracts";
 import Session from "@/pages/Session";
 import AddDoctor from "@/pages/AddDoctor";
+import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 1000 * 60 * 2, retry: 1 } },
 });
 
-const FULL_SCREEN_ROUTES = ["/get-started", "/session", "/book-now"];
+const FULL_SCREEN_ROUTES = ["/get-started", "/session", "/book-now", "/admin"];
 
 function Router() {
   const [location] = useLocation();
@@ -52,6 +53,7 @@ function Router() {
         <Route path="/contracts" component={Contracts} />
         <Route path="/session" component={Session} />
         <Route path="/add-doctor" component={AddDoctor} />
+        <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
       {!isFullScreen && <Footer />}

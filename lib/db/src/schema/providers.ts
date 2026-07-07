@@ -17,6 +17,10 @@ export const providersTable = pgTable("providers", {
   languages: text("languages").array(),
   acceptsInsurance: boolean("accepts_insurance").notNull().default(false),
   nextAvailable: text("next_available"),
+  email: text("email"),
+  phone: text("phone"),
+  qualifications: text("qualifications").array(),
+  doxyLink: text("doxy_link"),
 });
 
 export const insertProviderSchema = createInsertSchema(providersTable).omit({ id: true });

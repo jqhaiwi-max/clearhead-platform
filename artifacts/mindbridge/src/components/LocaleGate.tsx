@@ -73,6 +73,7 @@ export default function LocaleGate() {
 
   /* Show on first-ever visit globally; also once per session when entering /get-started */
   useEffect(() => {
+    if (location.startsWith("/admin")) return;
     const isJourney = location.startsWith("/get-started") || location.startsWith("/book-now");
     if (isJourney) {
       const journeyDone = sessionStorage.getItem(JOURNEY_KEY);

@@ -13,6 +13,8 @@ export const appointmentsTable = pgTable("appointments", {
   type: text("type").notNull(),
   status: text("status").notNull().default("pending"),
   notes: text("notes"),
+  patientPhone: text("patient_phone"),
+  paymentMethod: text("payment_method"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
