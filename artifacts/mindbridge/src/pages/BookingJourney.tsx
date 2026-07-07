@@ -453,7 +453,8 @@ export default function BookingJourney() {
   const [contactDetail,  setContactDetail ] = useState("");
 
   /* Validation */
-  const [showNameErrors, setShowNameErrors] = useState(false);
+  const [showNameErrors,    setShowNameErrors   ] = useState(false);
+  const [showProfileErrors, setShowProfileErrors] = useState(false);
 
   /* Booking */
   const [country,        setCountry       ] = useState<CountryPricing>(globalCountry);
@@ -770,8 +771,14 @@ export default function BookingJourney() {
                         <TextField label={j.lastNameLabel}  value={lastName}  onChange={v=>{setLastName(v);if(v.trim())setShowNameErrors(false);}}  placeholder={j.lastNamePH}  required
                           error={showNameErrors&&!lastName.trim()?j.nameRequired??"Required":""}/>
                       </div>
-                      <DOBPicker label={j.dobLabel} value={dob} onChange={setDob}/>
-                      <SelectField label={j.genderLabel} value={gender} onChange={setGender} options={j.genderOpts} placeholder="—"/>
+                      <div>
+                        <DOBPicker label={j.dobLabel} value={dob} onChange={v=>{setDob(v);if(v)setShowProfileErrors(false);}}/>
+                        {showProfileErrors&&!dob&&<p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/>Required</p>}
+                      </div>
+                      <div>
+                        <SelectField label={j.genderLabel} value={gender} onChange={v=>{setGender(v);if(v)setShowProfileErrors(false);}} options={j.genderOpts} placeholder="—"/>
+                        {showProfileErrors&&!gender&&<p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/>Required</p>}
+                      </div>
                       <div>
                         <label className="block text-xs font-semibold text-muted-foreground mb-1.5">{j.nationalityLabel}</label>
                         <select value={nationality} onChange={e=>setNationality(e.target.value)}
@@ -779,9 +786,18 @@ export default function BookingJourney() {
                           {COUNTRY_LIST.map(c=><option key={c.code} value={c.code}>{c.flag} {c.name} ({c.currency})</option>)}
                         </select>
                       </div>
-                      <SelectField label={j.maritalLabel}   value={maritalStatus} onChange={setMaritalStatus} options={j.maritalOpts}   placeholder="—"/>
-                      <TextField  label={j.occupationLabel} value={occupation}    onChange={setOccupation}    placeholder={j.occupationPH}/>
-                      <SelectField label={j.educationLabel} value={education}     onChange={setEducation}     options={j.educationOpts}  placeholder="—"/>
+                      <div>
+                        <SelectField label={j.maritalLabel} value={maritalStatus} onChange={v=>{setMaritalStatus(v);if(v)setShowProfileErrors(false);}} options={j.maritalOpts} placeholder="—"/>
+                        {showProfileErrors&&!maritalStatus&&<p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/>Required</p>}
+                      </div>
+                      <div>
+                        <TextField label={j.occupationLabel} value={occupation} onChange={v=>{setOccupation(v);if(v.trim())setShowProfileErrors(false);}} placeholder={j.occupationPH} required
+                          error={showProfileErrors&&!occupation.trim()?"Required":""}/>
+                      </div>
+                      <div>
+                        <SelectField label={j.educationLabel} value={education} onChange={v=>{setEducation(v);if(v)setShowProfileErrors(false);}} options={j.educationOpts} placeholder="—"/>
+                        {showProfileErrors&&!education&&<p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/>Required</p>}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1335,8 +1351,9 @@ export default function BookingJourney() {
                 onClick={()=>{
                   if(isBookStep){ goToCheckout(); return; }
                   if(phase===1&&step===0){
-                    if(!firstName.trim()||!lastName.trim()){ setShowNameErrors(true); return; }
-                    setShowNameErrors(false);
+                    const profileOk = firstName.trim()&&lastName.trim()&&dob&&gender&&maritalStatus&&occupation.trim()&&education;
+                    if(!profileOk){ setShowNameErrors(true); setShowProfileErrors(true); window.scrollTo({top:0,behavior:"smooth"}); return; }
+                    setShowNameErrors(false); setShowProfileErrors(false);
                   }
                   if(isLastInPhase) nextPhase();
                   else{
