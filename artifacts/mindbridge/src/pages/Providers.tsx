@@ -1,11 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useSearch } from "wouter";
 import { motion } from "framer-motion";
-import { Search, Star, Filter, CheckCircle, Globe, ChevronDown } from "lucide-react";
+import {
+  Search, Star, Filter, CheckCircle, Globe, ChevronDown,
+  ChevronLeft, ChevronRight, AlertCircle, RefreshCw,
+} from "lucide-react";
 import { useListProviders } from "@workspace/api-client-react";
 import { useCountry } from "@/context/CountryContext";
 import { COUNTRY_LIST, type CountryPricing } from "@/lib/pricing";
 import { useLang } from "@/context/LanguageContext";
+import { ProviderCardSkeleton } from "@/components/Skeleton";
+
+const PAGE_SIZE = 9;
 
 function CurrencyTag({ price, country }: { price: number; country: CountryPricing }) {
   const local = Math.round(price * country.usdRate);
@@ -56,6 +62,43 @@ function CountryPicker({ value, onChange }: { value: CountryPricing; onChange: (
   );
 }
 
+/* ── Pagination control ── */
+function Pagination({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (p: number) => void }) {
+  if (totalPages <= 1) return null;
+
+  const pages: (number | "…")[] = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== "…") {
+      pages.push("…");
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-1.5 mt-10">
+      <button onClick={() => onChange(page - 1)} disabled={page === 1}
+        className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+        <ChevronLeft className="w-4 h-4"/>
+      </button>
+      {pages.map((p, i) =>
+        p === "…" ? (
+          <span key={`e${i}`} className="px-2 text-muted-foreground">…</span>
+        ) : (
+          <button key={p} onClick={() => onChange(p as number)}
+            className={`w-10 h-10 rounded-xl text-sm font-semibold transition-colors ${page === p ? "bg-primary text-white shadow-sm" : "border border-border hover:bg-muted text-foreground"}`}>
+            {p}
+          </button>
+        )
+      )}
+      <button onClick={() => onChange(page + 1)} disabled={page === totalPages}
+        className="p-2 rounded-xl border border-border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+        <ChevronRight className="w-4 h-4"/>
+      </button>
+    </div>
+  );
+}
+
 export default function Providers() {
   const { t, dir }  = useLang();
   const p           = t.providerPage;
@@ -65,10 +108,14 @@ export default function Providers() {
   const initialGender = params.get("gender") || "";
 
   const { country, setCountry } = useCountry();
-  const [searchTerm, setSearchTerm]     = useState("");
-  const [specialty, setSpecialty]       = useState(initialSpec);
+  const [searchTerm, setSearchTerm]       = useState("");
+  const [specialty, setSpecialty]         = useState(initialSpec);
   const [availableOnly, setAvailableOnly] = useState(false);
-  const [genderFilter, setGenderFilter] = useState(initialGender);
+  const [genderFilter, setGenderFilter]   = useState(initialGender);
+  const [page, setPage]                   = useState(1);
+
+  /* Reset to page 1 whenever filters change */
+  useEffect(() => { setPage(1); }, [searchTerm, specialty, availableOnly, genderFilter]);
 
   const queryParams = {
     ...(searchTerm ? { search: searchTerm } : {}),
@@ -76,11 +123,14 @@ export default function Providers() {
     ...(availableOnly ? { available: true } : {}),
   };
 
-  const { data: providers, isLoading } = useListProviders(queryParams);
+  const { data: providers, isLoading, isError, refetch } = useListProviders(queryParams);
 
-  const filtered = (providers ?? []).filter((item) =>
+  /* Client-side gender filter + pagination */
+  const allFiltered = (providers ?? []).filter((item) =>
     genderFilter ? item.title?.toLowerCase().includes(genderFilter.toLowerCase()) : true
   );
+  const totalPages  = Math.ceil(allFiltered.length / PAGE_SIZE);
+  const paginated   = allFiltered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div dir={dir} className="min-h-screen pt-24 pb-20 bg-background">
@@ -134,26 +184,49 @@ export default function Providers() {
           </label>
         </motion.div>
 
-        {/* Results */}
+        {/* ── Loading skeletons ── */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-72 rounded-2xl bg-muted animate-pulse"/>)}
+            {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.04 }}>
+                <ProviderCardSkeleton />
+              </motion.div>
+            ))}
           </div>
-        ) : filtered.length === 0 ? (
+
+        /* ── Error state ── */
+        ) : isError ? (
+          <div className="text-center py-20 bg-card border border-border rounded-2xl">
+            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4"/>
+            <h3 className="font-semibold text-foreground text-lg mb-2">Failed to load providers</h3>
+            <p className="text-muted-foreground mb-6">Something went wrong. Please try again.</p>
+            <button onClick={() => refetch()}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
+              <RefreshCw className="w-4 h-4"/> Retry
+            </button>
+          </div>
+
+        /* ── Empty state ── */
+        ) : allFiltered.length === 0 ? (
           <div className="text-center py-20">
             <Filter className="w-12 h-12 text-muted-foreground mx-auto mb-4"/>
             <h3 className="font-semibold text-foreground text-lg mb-2">{p.noFound}</h3>
             <p className="text-muted-foreground">{p.tryAdjust}</p>
           </div>
+
+        /* ── Results + pagination ── */
         ) : (
           <>
             <p className="text-sm text-muted-foreground mb-6">
-              {filtered.length} {p.availableNow} · {p.pricesIn} {country.flag} {country.currency}
+              {allFiltered.length} {p.availableNow} · {p.pricesIn} {country.flag} {country.currency}
+              {totalPages > 1 && <span> · Page {page} of {totalPages}</span>}
             </p>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filtered.map((item, i) => (
+              {paginated.map((item, i) => (
                 <motion.div key={item.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.05 }}>
+                  transition={{ duration: 0.35, delay: i * 0.04 }}>
                   <Link href={`/providers/${item.id}`} className="group block h-full">
                     <div className="bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 h-full flex flex-col">
                       <div className="relative h-52 overflow-hidden bg-muted">
@@ -200,6 +273,8 @@ export default function Providers() {
                 </motion.div>
               ))}
             </div>
+
+            <Pagination page={page} totalPages={totalPages} onChange={(p) => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }}/>
           </>
         )}
       </div>

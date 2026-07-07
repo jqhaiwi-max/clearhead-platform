@@ -3,20 +3,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import {
   Calendar, Clock, Video, Phone, MessageSquare, ArrowRight, Play,
-  Star, Heart, ChevronDown, Bell, CheckCircle, RotateCcw, Sparkles
+  Star, Heart, ChevronDown, Bell, CheckCircle, RotateCcw, Sparkles,
+  AlertCircle, RefreshCw, ChevronUp,
 } from "lucide-react";
 import { useListAppointments } from "@workspace/api-client-react";
+import { AppointmentSkeleton } from "@/components/Skeleton";
+
+const PAGE_STEP = 5;
 
 const statusColors: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-700 border-amber-200",
+  pending:   "bg-amber-100 text-amber-700 border-amber-200",
   confirmed: "bg-green-100 text-green-700 border-green-200",
   completed: "bg-blue-100 text-blue-700 border-blue-200",
   cancelled: "bg-red-100 text-red-700 border-red-200",
 };
 
 const typeIcons: Record<string, React.ElementType> = {
-  video: Video,
-  phone: Phone,
+  video:     Video,
+  phone:     Phone,
   messaging: MessageSquare,
 };
 
@@ -103,7 +107,7 @@ function AppointmentCard({ apt, index }: { apt: any; index: number }) {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.07 }}
+      transition={{ duration: 0.35, delay: index * 0.06 }}
       className={`bg-card border rounded-2xl overflow-hidden transition-shadow duration-300 hover:shadow-md ${isUpcoming ? "border-primary/20" : "border-border"}`}
     >
       <div className="p-5">
@@ -134,12 +138,13 @@ function AppointmentCard({ apt, index }: { apt: any; index: number }) {
             </div>
             <button onClick={() => setExpanded(!expanded)}
               className="p-1 rounded-lg hover:bg-muted transition-colors">
-              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
+              {expanded
+                ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
             </button>
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className="mt-4 flex flex-wrap gap-2">
           {isUpcoming && (
             <Link href={`/session?${sessionParams}`}
@@ -164,11 +169,10 @@ function AppointmentCard({ apt, index }: { apt: any; index: number }) {
         </div>
       </div>
 
-      {/* Expanded details */}
       <AnimatePresence>
         {expanded && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-            className="border-t border-border bg-muted/30 px-5 py-4">
+            className="border-t border-border bg-muted/30 px-5 py-4 overflow-hidden">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
               <div><div className="text-xs text-muted-foreground mb-0.5">Session type</div><div className="font-medium capitalize text-foreground">{apt.type}</div></div>
               <div><div className="text-xs text-muted-foreground mb-0.5">Status</div><div className="font-medium capitalize text-foreground">{apt.status}</div></div>
@@ -195,8 +199,9 @@ function AppointmentCard({ apt, index }: { apt: any; index: number }) {
 }
 
 export default function Appointments() {
-  const { data: appointments, isLoading } = useListAppointments();
-  const [filter, setFilter] = useState<"all" | "upcoming" | "completed">("all");
+  const { data: appointments, isLoading, isError, refetch } = useListAppointments();
+  const [filter, setFilter]       = useState<"all" | "upcoming" | "completed">("all");
+  const [visibleCount, setVisibleCount] = useState(PAGE_STEP);
 
   const filtered = appointments
     ? appointments.filter((a) => {
@@ -207,6 +212,8 @@ export default function Appointments() {
     : [];
 
   const upcomingCount = appointments?.filter((a) => a.status === "confirmed" || a.status === "pending").length ?? 0;
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
 
   return (
     <div className="min-h-screen pt-24 pb-20 bg-background">
@@ -217,22 +224,42 @@ export default function Appointments() {
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main list */}
+          {/* ── Main list ── */}
           <div className="lg:col-span-2">
             {/* Filter tabs */}
             <div className="flex gap-1 p-1 bg-muted rounded-2xl mb-6">
               {(["all", "upcoming", "completed"] as const).map((f) => (
-                <button key={f} onClick={() => setFilter(f)}
+                <button key={f} onClick={() => { setFilter(f); setVisibleCount(PAGE_STEP); }}
                   className={`flex-1 py-2 rounded-xl text-sm font-semibold capitalize transition-all ${filter === f ? "bg-white shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                   {f}
                 </button>
               ))}
             </div>
 
+            {/* Loading — shaped skeletons */}
             {isLoading ? (
               <div className="space-y-4">
-                {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-28 rounded-2xl bg-muted animate-pulse" />)}
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.07 }}>
+                    <AppointmentSkeleton />
+                  </motion.div>
+                ))}
               </div>
+
+            /* Error state */
+            ) : isError ? (
+              <div className="text-center py-20 bg-card border border-border rounded-2xl">
+                <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4"/>
+                <h3 className="font-semibold text-foreground text-lg mb-2">Failed to load sessions</h3>
+                <p className="text-muted-foreground mb-6">Something went wrong. Please try again.</p>
+                <button onClick={() => refetch()}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
+                  <RefreshCw className="w-4 h-4"/> Retry
+                </button>
+              </div>
+
+            /* Empty state */
             ) : filtered.length === 0 ? (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
                 className="text-center py-20 bg-card border border-border rounded-2xl">
@@ -243,12 +270,32 @@ export default function Appointments() {
                   Find a therapist <ArrowRight className="w-4 h-4" />
                 </Link>
               </motion.div>
+
+            /* Results + load more */
             ) : (
               <div className="space-y-4">
-                {filtered.map((apt, i) => (
+                {visible.map((apt, i) => (
                   <AppointmentCard key={apt.id} apt={apt} index={i} />
                 ))}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.4 }} className="text-center pt-4">
+
+                {/* Load more / collapse */}
+                <div className="flex gap-3 justify-center pt-2">
+                  {hasMore && (
+                    <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.2 }}
+                      onClick={() => setVisibleCount((c) => c + PAGE_STEP)}
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-muted transition-colors">
+                      Load {Math.min(PAGE_STEP, filtered.length - visibleCount)} more
+                    </motion.button>
+                  )}
+                  {visibleCount > PAGE_STEP && (
+                    <button onClick={() => setVisibleCount(PAGE_STEP)}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      Show less
+                    </button>
+                  )}
+                </div>
+
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.3 }} className="text-center pt-2">
                   <Link href="/get-started" className="inline-flex items-center gap-2 text-primary font-semibold hover:gap-3 transition-all duration-200">
                     Book another session <ArrowRight className="w-4 h-4" />
                   </Link>
@@ -257,9 +304,8 @@ export default function Appointments() {
             )}
           </div>
 
-          {/* Sidebar */}
+          {/* ── Sidebar ── */}
           <div className="space-y-4">
-            {/* Upcoming count */}
             {upcomingCount > 0 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
                 className="bg-primary/5 border border-primary/20 rounded-2xl p-5">
@@ -272,30 +318,27 @@ export default function Appointments() {
               </motion.div>
             )}
 
-            {/* Daily check-in */}
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
               <WellnessCheckin />
             </motion.div>
 
-            {/* Tip */}
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
               <TipCard />
             </motion.div>
 
-            {/* Quick links */}
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.25 }}
               className="bg-card border border-border rounded-2xl p-5">
               <h3 className="font-semibold text-foreground text-sm mb-3">Quick access</h3>
               <div className="space-y-2">
                 {[
-                  { href: "/get-started", label: "Book a new session", icon: ArrowRight },
-                  { href: "/providers", label: "Browse providers", icon: ArrowRight },
-                  { href: "/pricing", label: "View plans & pricing", icon: ArrowRight },
+                  { href: "/get-started", label: "Book a new session" },
+                  { href: "/providers",   label: "Browse providers" },
+                  { href: "/pricing",     label: "View plans & pricing" },
                 ].map((item) => (
                   <Link key={item.href} href={item.href}
                     className="flex items-center justify-between py-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
                     <span>{item.label}</span>
-                    <item.icon className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </Link>
                 ))}
               </div>

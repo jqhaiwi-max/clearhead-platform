@@ -25,7 +25,15 @@ import Admin from "@/pages/Admin";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 1000 * 60 * 2, retry: 1 } },
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,        // 5 min — data considered fresh
+      gcTime: 1000 * 60 * 15,           // 15 min — keep unused data in memory
+      retry: 1,
+      refetchOnWindowFocus: false,       // don't re-fetch when switching tabs
+      refetchOnReconnect: true,          // do re-fetch when coming back online
+    },
+  },
 });
 
 const FULL_SCREEN_ROUTES = ["/get-started", "/session", "/book-now", "/admin"];

@@ -29,6 +29,24 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+/* ── Cache-Control headers for GET requests ── */
+app.use("/api", (req, res, next) => {
+  if (req.method === "GET") {
+    const p = req.path;
+    if (
+      p.startsWith("/providers") ||
+      p.startsWith("/specialties") ||
+      p.startsWith("/testimonials") ||
+      p.startsWith("/stats")
+    ) {
+      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    } else {
+      res.setHeader("Cache-Control", "private, no-cache, no-store, must-revalidate");
+    }
+  }
+  next();
+});
+
 app.use("/api", router);
 
 export default app;
