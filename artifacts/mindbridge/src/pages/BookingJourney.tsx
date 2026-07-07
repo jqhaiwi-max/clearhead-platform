@@ -497,9 +497,28 @@ export default function BookingJourney() {
     else{setPromo(null);setPromoErr(j.invalidPromo);}
   };
 
-  const ADMIN_WA = "00962770403270";
+  const ADMIN_WA = "962770403270";
 
-  /* Book */
+  /* Go to Checkout with all collected journey data pre-filled */
+  const goToCheckout = useCallback(() => {
+    if (!provider || !date || !time) return;
+    const p = new URLSearchParams({
+      provider: String(provider.id),
+      date,
+      time,
+      duration: String(duration),
+      name: `${firstName} ${lastName}`.trim(),
+      phone: contactMethod === "whatsapp" ? contactDetail : "",
+      email: contactMethod === "email" ? contactDetail : "",
+      country: nationality,
+      pid: patientId,
+      careType,
+      ...(promo ? { promo: promo.code } : {}),
+    });
+    navigate(`/checkout?${p.toString()}`);
+  }, [provider, date, time, duration, firstName, lastName, contactMethod, contactDetail, nationality, patientId, careType, promo, navigate]);
+
+  /* handleBook kept for legacy/direct use (no longer called from the journey UI) */
   const handleBook = async () => {
     if(!provider||!date||!time)return;
     setLoading(true); setBookErr("");
@@ -1202,7 +1221,7 @@ export default function BookingJourney() {
               if(phase===3&&step===1)  return !!duration;
               if(phase===3&&step===2)  return !!date;
               if(phase===3&&step===3)  return !!time;
-              if(phase===3&&step===4)  return acceptTerms && !loading;
+              if(phase===3&&step===4)  return acceptTerms;
               return false;
             })();
 
@@ -1215,14 +1234,14 @@ export default function BookingJourney() {
               if(phase===1&&step===1)  return j.continueToPrefs;
               if(phase===2&&step===0)  return j.findProvider;
               if(phase===3&&step===3)  return j.reviewBookingBtn;
-              if(isBookStep)           return loading ? "…" : j.confirmBookBtn ?? "Confirm & Book";
+              if(isBookStep)           return j.proceedToPayment ?? "Proceed to Payment →";
               return j.continueBtn;
             })();
 
             return (
               <button
                 onClick={()=>{
-                  if(isBookStep){ handleBook(); return; }
+                  if(isBookStep){ goToCheckout(); return; }
                   if(phase===1&&step===0){
                     if(!firstName.trim()||!lastName.trim()){ setShowNameErrors(true); return; }
                     setShowNameErrors(false);
@@ -1233,9 +1252,7 @@ export default function BookingJourney() {
                 disabled={!canContinue}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all
                   ${canContinue?"bg-primary text-white hover:opacity-90 hover:-translate-y-0.5 shadow-md":"bg-muted text-muted-foreground cursor-not-allowed"}`}>
-                {loading&&isBookStep
-                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                  : null}
+                {null}
                 {label} {canContinue&&!isBookStep&&<ArrowRight className="w-4 h-4"/>}
               </button>
             );

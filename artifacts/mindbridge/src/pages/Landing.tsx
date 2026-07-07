@@ -51,19 +51,6 @@ export default function Landing() {
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
               {l.heroAvailable}
             </span>
-            {/* Language switcher */}
-            <div className="inline-flex items-center gap-1 p-1 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-sm">
-              {([ { code: "en", flag: "🇬🇧", label: "English" }, { code: "ar", flag: "🇸🇦", label: "العربية" } ] as { code: Lang; flag: string; label: string }[]).map(opt => (
-                <button key={opt.code} onClick={() => setLang(opt.code)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200
-                    ${lang === opt.code
-                      ? "bg-white text-[hsl(158,55%,20%)] shadow-sm"
-                      : "text-white/70 hover:text-white hover:bg-white/10"}`}>
-                  <span className="text-base leading-none">{opt.flag}</span>
-                  <span dir={opt.code === "ar" ? "rtl" : "ltr"}>{opt.label}</span>
-                </button>
-              ))}
-            </div>
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
             className="font-serif text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6">

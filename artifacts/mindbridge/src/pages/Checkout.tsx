@@ -39,7 +39,7 @@ const TIME_SLOTS = [
 const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-const ADMIN_WHATSAPP = "00962770403270";
+const ADMIN_WHATSAPP = "962770403270";
 const ADMIN_EMAIL    = "jamal_alqhaiwi@yahoo.com";
 
 type PayMethod = "credit" | "zain" | "orange" | "cliq";
@@ -249,29 +249,39 @@ export default function Checkout() {
   const search = useSearch();
   const [, navigate] = useLocation();
   const params = new URLSearchParams(search);
+
+  /* URL params — populated by BookingJourney when navigating here */
   const providerId      = parseInt(params.get("provider") || "1");
   const initialDuration = parseInt(params.get("duration") || "60");
+  const initialDate     = params.get("date")  || "";
+  const initialTime     = params.get("time")  || "";
+  const initialName     = params.get("name")  || "";
+  const initialPhone    = params.get("phone") || "";
+  const initialEmail    = params.get("email") || "";
+  const initialPromo    = params.get("promo") || "";
+  const initialPid      = params.get("pid")   || "";
 
   const { country } = useCountry();
   const { t, dir }  = useLang();
   const tc          = t.checkout;
   const { data: provider } = useGetProvider(providerId, { query: { enabled: !!providerId } });
 
-  /* Stable patient ID for this session */
-  const patientIdRef = useRef(generatePatientId());
+  /* Stable patient ID — reuse journey ID if provided */
+  const patientIdRef = useRef(initialPid || generatePatientId());
   const patientId    = patientIdRef.current;
 
   const [duration,      setDuration]      = useState(initialDuration);
-  const [date,          setDate]          = useState("");
-  const [time,          setTime]          = useState("");
+  const [date,          setDate]          = useState(initialDate);
+  const [time,          setTime]          = useState(initialTime);
   const [bookedSlots,   setBookedSlots]   = useState<string[]>([]);
   const [slotsLoading,  setSlotsLoading]  = useState(false);
 
-  const [patientName,   setPatientName]   = useState("");
-  const [patientEmail,  setPatientEmail]  = useState("");
-  const [patientPhone,  setPatientPhone]  = useState("");
+  /* Pre-fill patient details from journey */
+  const [patientName,   setPatientName]   = useState(initialName);
+  const [patientEmail,  setPatientEmail]  = useState(initialEmail);
+  const [patientPhone,  setPatientPhone]  = useState(initialPhone);
 
-  const [promoInput,    setPromoInput]    = useState("");
+  const [promoInput,    setPromoInput]    = useState(initialPromo);
   const [appliedCode,   setAppliedCode]   = useState<{code:string;discount:number}|null>(null);
   const [promoError,    setPromoError]    = useState("");
   const [acceptTerms,   setAcceptTerms]   = useState(false);
@@ -293,14 +303,27 @@ export default function Checkout() {
   /* Validation */
   const [showErrors, setShowErrors] = useState(false);
 
+  /* Auto-apply promo from journey */
+  useEffect(() => {
+    if (!initialPromo) return;
+    const disc = PROMO_CODES[initialPromo.toUpperCase()];
+    if (disc) setAppliedCode({ code: initialPromo.toUpperCase(), discount: disc });
+  }, []);
+
   const basePrice  = provider?.sessionPrice ?? 50;
   const { usd, local } = getSessionPrice(basePrice, duration, country);
   const discountAmt = appliedCode ? Math.round(local * appliedCode.discount) : 0;
   const total       = local - discountAmt;
 
+  /* Track whether the initial time came from the journey (don't clear it on first load) */
+  const prefilledTimeRef = useRef(initialTime);
+
   useEffect(()=>{
     if (!date || !providerId) return;
-    setSlotsLoading(true); setTime("");
+    setSlotsLoading(true);
+    /* Only clear the time picker if it wasn't pre-filled from the journey */
+    if (!prefilledTimeRef.current) setTime("");
+    else prefilledTimeRef.current = "";
     fetchBookedSlots(providerId, date).then(slots=>{
       setBookedSlots(slots); setSlotsLoading(false);
     });
