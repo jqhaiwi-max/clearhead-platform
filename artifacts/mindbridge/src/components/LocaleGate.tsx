@@ -72,6 +72,7 @@ export default function LocaleGate() {
   useEffect(() => {
     if (window.location.pathname.includes("/admin")) return;
     if (window.location.pathname.includes("/checkout")) return;
+    if (window.location.pathname.includes("/login")) return;
     const sessionDone = sessionStorage.getItem(SESSION_KEY);
     if (!sessionDone) {
       setVisible(true);

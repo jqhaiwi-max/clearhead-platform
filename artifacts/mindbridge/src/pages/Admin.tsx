@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, Users, CalendarDays, Stethoscope,
@@ -1194,6 +1195,7 @@ const NAV_ITEMS: { id: Section; label: string; icon: React.ComponentType<{classN
 ];
 
 export default function Admin() {
+  const { user, signOut } = useAuth();
   const [section, setSection] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -1239,10 +1241,17 @@ export default function Admin() {
           ))}
         </nav>
 
-        <div className="px-3 py-4 border-t border-white/10">
+        <div className="px-3 py-4 border-t border-white/10 space-y-1">
+          {user && (
+            <p className="px-3 text-[11px] text-white/40 truncate mb-2">{user.email}</p>
+          )}
           <a href="/" className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/50 hover:text-white hover:bg-white/10 transition-colors">
             <LogOut className="w-4 h-4" /> Back to Site
           </a>
+          <button onClick={async () => { await signOut(); window.location.href = "/login"; }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400/80 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+            <LogOut className="w-4 h-4" /> Sign out
+          </button>
         </div>
       </aside>
 

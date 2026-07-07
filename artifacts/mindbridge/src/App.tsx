@@ -4,9 +4,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CountryProvider } from "@/context/CountryContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LocaleGate from "@/components/LocaleGate";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Landing from "@/pages/Landing";
 import Providers from "@/pages/Providers";
 import ProviderDetail from "@/pages/ProviderDetail";
@@ -22,6 +24,7 @@ import Contracts from "@/pages/Contracts";
 import Session from "@/pages/Session";
 import AddDoctor from "@/pages/AddDoctor";
 import Admin from "@/pages/Admin";
+import Login from "@/pages/Login";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
@@ -36,7 +39,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const FULL_SCREEN_ROUTES = ["/get-started", "/session", "/book-now", "/admin"];
+const FULL_SCREEN_ROUTES = ["/get-started", "/session", "/book-now", "/admin", "/login"];
 
 function Router() {
   const [location] = useLocation();
@@ -61,7 +64,8 @@ function Router() {
         <Route path="/contracts" component={Contracts} />
         <Route path="/session" component={Session} />
         <Route path="/add-doctor" component={AddDoctor} />
-        <Route path="/admin" component={Admin} />
+        <Route path="/login" component={Login} />
+        <Route path="/admin">{() => <ProtectedRoute component={Admin} />}</Route>
         <Route component={NotFound} />
       </Switch>
       {!isFullScreen && <Footer />}
@@ -75,9 +79,11 @@ function App() {
       <TooltipProvider>
         <LanguageProvider>
           <CountryProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
+            <AuthProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+            </AuthProvider>
           </CountryProvider>
         </LanguageProvider>
         <Toaster />
