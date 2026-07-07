@@ -71,6 +71,7 @@ export default function LocaleGate() {
   /* Show once per session on every page (except /admin) + auto-detect country from IP */
   useEffect(() => {
     if (window.location.pathname.includes("/admin")) return;
+    if (window.location.pathname.includes("/checkout")) return;
     const sessionDone = sessionStorage.getItem(SESSION_KEY);
     if (!sessionDone) {
       setVisible(true);

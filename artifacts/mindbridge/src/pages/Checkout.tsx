@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { useSearch, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  CheckCircle, Tag, Clock, Calendar, ChevronLeft, ChevronRight,
-  Star, Shield, Zap, AlertCircle, X, MessageCircle, Mail, Copy,
-  Check, CreditCard, Smartphone, Video, User, Hash,
+  CheckCircle, Tag, Clock, ChevronLeft, ChevronRight,
+  Star, Shield, AlertCircle, MessageCircle, Copy,
+  Check, CreditCard, Smartphone, Video, User, Hash, MapPin,
 } from "lucide-react";
 import { useGetProvider } from "@workspace/api-client-react";
 import { useCountry } from "@/context/CountryContext";
 import { useLang } from "@/context/LanguageContext";
-import { SESSION_DURATIONS, PROMO_CODES, getSessionPrice } from "@/lib/pricing";
+import { COUNTRY_LIST, PROMO_CODES, getSessionPrice } from "@/lib/pricing";
 
 /* ─── Helpers ─────────────────────────────────────── */
 function generatePatientId(): string {
@@ -30,79 +30,13 @@ function formatSlotRange(start: string, durationMins: number): string {
   return `${start} – ${addMinutes(start, durationMins)}`;
 }
 
-const TIME_SLOTS = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-  "16:00", "16:30", "17:00", "17:30", "18:00", "19:00",
-];
-
-const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
 const ADMIN_WHATSAPP = "962770403270";
 const ADMIN_EMAIL    = "jamal_alqhaiwi@yahoo.com";
 
 type PayMethod = "credit" | "zain" | "orange" | "cliq";
 
-/* ─── Calendar ─────────────────────────────────────── */
-function CalendarGrid({ selectedDate, onSelect }: { selectedDate: string; onSelect: (d: string) => void }) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const [viewYear,  setViewYear]  = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
-
-  const prevMonth = () => { if (viewMonth===0){setViewMonth(11);setViewYear(y=>y-1);}else setViewMonth(m=>m-1); };
-  const nextMonth = () => { if (viewMonth===11){setViewMonth(0);setViewYear(y=>y+1);}else setViewMonth(m=>m+1); };
-  const pad = (n: number) => String(n).padStart(2,"0");
-  const toValue = (day: number) => `${viewYear}-${pad(viewMonth+1)}-${pad(day)}`;
-  const firstDay   = new Date(viewYear, viewMonth, 1).getDay();
-  const daysInMonth= new Date(viewYear, viewMonth+1, 0).getDate();
-  const isPast     = (d: number) => new Date(viewYear,viewMonth,d) < today;
-  const isTooFar   = (d: number) => { const max=new Date(today); max.setDate(today.getDate()+60); return new Date(viewYear,viewMonth,d)>max; };
-  const isToday    = (d: number) => new Date(viewYear,viewMonth,d).getTime()===today.getTime();
-
-  return (
-    <div className="select-none">
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronLeft className="w-4 h-4"/></button>
-        <span className="font-semibold text-foreground">{MONTH_NAMES[viewMonth]} {viewYear}</span>
-        <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-muted transition-colors"><ChevronRight className="w-4 h-4"/></button>
-      </div>
-      <div className="grid grid-cols-7 mb-2">
-        {DAY_NAMES.map(d=><div key={d} className="text-center text-xs font-semibold text-muted-foreground py-1">{d}</div>)}
-      </div>
-      <div className="grid grid-cols-7 gap-y-1">
-        {Array.from({length:firstDay},(_,i)=><div key={`e${i}`}/>)}
-        {Array.from({length:daysInMonth},(_,i)=>{
-          const day=i+1, value=toValue(day);
-          const disabled=isPast(day)||isTooFar(day);
-          const selected=value===selectedDate;
-          const todayMark=isToday(day);
-          return (
-            <button key={day} disabled={disabled} onClick={()=>!disabled&&onSelect(value)}
-              className={`mx-auto w-9 h-9 rounded-full text-sm font-medium transition-all flex items-center justify-center
-                ${selected?"bg-primary text-primary-foreground shadow-md":""}
-                ${!selected&&todayMark?"border-2 border-primary text-primary":""}
-                ${!selected&&!disabled&&!todayMark?"hover:bg-primary/10 text-foreground":""}
-                ${disabled?"text-muted-foreground/40 cursor-not-allowed":"cursor-pointer"}`}>
-              {day}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 /* ─── API helpers ───────────────────────────────────── */
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-
-async function fetchBookedSlots(providerId: number, date: string): Promise<string[]> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/appointments/slots?providerId=${providerId}&date=${date}`);
-    if (!res.ok) return [];
-    return (await res.json()).bookedSlots ?? [];
-  } catch { return []; }
-}
 
 async function createAppointment(body: object): Promise<{id:number}|null> {
   const res = await fetch(`${BASE_URL}/api/appointments`, {
@@ -118,7 +52,7 @@ function formatDateDisplay(dateStr: string) {
   return new Date(y,m-1,d).toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 }
 
-/* ─── Payment section ──────────────────────────────── */
+/* ─── Payment section (Talabat-style radio list) ─────── */
 function PaymentSection({ method, setMethod, cardNum, setCardNum, cardExp, setCardExp, cardCvv, setCardCvv, cardName, setCardName, walletNum, setWalletNum, cliqAlias, setCliqAlias, tc }: {
   method: PayMethod; setMethod: (m: PayMethod) => void;
   cardNum: string; setCardNum: (v: string) => void;
@@ -129,117 +63,99 @@ function PaymentSection({ method, setMethod, cardNum, setCardNum, cardExp, setCa
   cliqAlias: string; setCliqAlias: (v: string) => void;
   tc: ReturnType<typeof useLang>["t"]["checkout"];
 }) {
-  const methods: {id: PayMethod; label: string; icon: React.ReactNode; desc: string}[] = [
-    { id: "credit", label: tc.payCredit,  icon: <CreditCard className="w-5 h-5"/>, desc: "Visa · Mastercard" },
-    { id: "cliq",   label: "CliQ",        icon: <span className="text-lg">🏦</span>, desc: "Jordan bank transfer" },
-    { id: "zain",   label: tc.payZain,    icon: <Smartphone className="w-5 h-5"/>,  desc: "Zain Cash wallet" },
-    { id: "orange", label: tc.payOrange,  icon: <Smartphone className="w-5 h-5"/>,  desc: "Orange Money wallet" },
+  const methods: {id: PayMethod; label: string; icon: React.ReactNode; badge?: React.ReactNode}[] = [
+    {
+      id: "credit", label: tc.payCredit,
+      icon: <CreditCard className="w-5 h-5 text-slate-600"/>,
+      badge: <div className="flex gap-1.5"><span className="bg-[#1A1F71] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">VISA</span><span className="bg-[#EB001B] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">MC</span></div>,
+    },
+    { id: "cliq", label: "CliQ", icon: <span className="text-xl leading-none">🏦</span>, badge: <span className="text-[10px] text-emerald-700 font-medium bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">JoPACC</span> },
+    { id: "zain", label: tc.payZain, icon: <Smartphone className="w-5 h-5 text-violet-600"/>, badge: <span className="text-[10px] text-violet-700 font-medium bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">Wallet</span> },
+    { id: "orange", label: tc.payOrange, icon: <Smartphone className="w-5 h-5 text-orange-500"/>, badge: <span className="text-[10px] text-orange-700 font-medium bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full">Wallet</span> },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        {methods.map(m=>(
-          <button key={m.id} onClick={()=>setMethod(m.id)}
-            className={`flex items-start gap-3 p-3.5 rounded-xl border-2 text-sm transition-all
-              ${method===m.id?"border-primary bg-primary/5 shadow-sm":"border-border hover:border-primary/30 bg-card"}`}>
-            <span className={`mt-0.5 ${method===m.id?"text-primary":"text-muted-foreground"}`}>{m.icon}</span>
-            <div className="flex-1 text-start">
-              <div className={`font-semibold text-sm ${method===m.id?"text-primary":"text-foreground"}`}>{m.label}</div>
-              <div className="text-[11px] text-muted-foreground leading-snug">{m.desc}</div>
+    <div className="space-y-0 divide-y divide-border">
+      {methods.map(m=>(
+        <div key={m.id}>
+          <button onClick={()=>setMethod(m.id)}
+            className="w-full flex items-center gap-4 py-4 text-start hover:bg-muted/30 transition-colors first:pt-0 last:pb-0">
+            <span className="w-8 flex items-center justify-center flex-shrink-0">{m.icon}</span>
+            <span className="flex-1 font-medium text-sm text-foreground">{m.label}</span>
+            {m.badge && <span>{m.badge}</span>}
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${method===m.id?"border-primary":"border-border"}`}>
+              {method===m.id&&<div className="w-2.5 h-2.5 rounded-full bg-primary"/>}
             </div>
-            {method===m.id&&<Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"/>}
           </button>
-        ))}
-      </div>
 
-      <AnimatePresence mode="wait">
-        {method==="credit" && (
-          <motion.div key="card" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}
-            className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-white/60 text-xs font-semibold uppercase tracking-wider">Secure Card Payment</span>
-              <div className="flex gap-2">
-                <span className="bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">VISA</span>
-                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">MC</span>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-white/50 block mb-1.5">{tc.cardNumber}</label>
-              <input value={cardNum} onChange={e=>setCardNum(e.target.value.replace(/\D/g,"").slice(0,16))}
-                placeholder="•••• •••• •••• ••••"
-                className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm font-mono focus:outline-none focus:border-white/50 tracking-widest"/>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-white/50 block mb-1.5">{tc.cardExpiry}</label>
-                <input value={cardExp} onChange={e=>setCardExp(e.target.value)} placeholder="MM / YY"
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-white/50"/>
-              </div>
-              <div>
-                <label className="text-xs text-white/50 block mb-1.5">{tc.cardCvv}</label>
-                <input value={cardCvv} onChange={e=>setCardCvv(e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="•••"
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-white/50"/>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-white/50 block mb-1.5">{tc.cardName}</label>
-              <input value={cardName} onChange={e=>setCardName(e.target.value)} placeholder="Full name on card"
-                className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-white/50"/>
-            </div>
-            <div className="flex items-center gap-2 pt-1">
-              <Shield className="w-3.5 h-3.5 text-white/40"/>
-              <span className="text-xs text-white/40">256-bit SSL encrypted · PCI-DSS compliant</span>
-            </div>
-          </motion.div>
-        )}
-
-        {method==="cliq" && (
-          <motion.div key="cliq" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}
-            className="rounded-2xl p-5 space-y-3 border-2 border-emerald-200 bg-emerald-50">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🏦</span>
-              <div>
-                <span className="font-bold text-sm text-emerald-800">CliQ — Jordan Instant Payment</span>
-                <p className="text-xs text-emerald-700">Powered by JoPACC · All Jordanian banks</p>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-emerald-800 block mb-1.5">
-                Your CliQ Alias <span className="font-normal text-emerald-700">(IBAN or registered mobile)</span>
-              </label>
-              <input value={cliqAlias} onChange={e=>setCliqAlias(e.target.value)} type="text"
-                placeholder="JO94CBJO… or 07XXXXXXXX"
-                className="w-full px-4 py-2.5 rounded-xl border-2 border-emerald-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
-            </div>
-            <p className="text-xs text-emerald-700 leading-relaxed">
-              Enter your Jordan IBAN (starting JO) or the mobile number registered with your bank for CliQ. You will receive a payment request to approve.
-            </p>
-          </motion.div>
-        )}
-
-        {(method==="zain"||method==="orange") && (
-          <motion.div key="wallet" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}
-            className={`rounded-2xl p-5 space-y-3 border-2 ${method==="zain"?"border-violet-200 bg-violet-50":"border-orange-200 bg-orange-50"}`}>
-            <div className="flex items-center gap-2">
-              <Smartphone className={`w-5 h-5 ${method==="zain"?"text-violet-600":"text-orange-500"}`}/>
-              <span className={`font-semibold text-sm ${method==="zain"?"text-violet-700":"text-orange-700"}`}>
-                {method==="zain"?"Zain Cash — Jordan":"Orange Money — Jordan"}
-              </span>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">{tc.walletNumber} <span className="text-red-500">*</span></label>
-              <input value={walletNum} onChange={e=>setWalletNum(e.target.value.replace(/\D/g,""))} placeholder="07XXXXXXXX" type="tel"
-                className="w-full px-4 py-2.5 rounded-xl border border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {method==="zain"
-                ? "You'll receive a USSD prompt on your Zain line to approve the payment."
-                : "You'll receive a confirmation SMS on your Orange line to approve the payment."}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <AnimatePresence>
+            {method===m.id && (
+              <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:"auto"}} exit={{opacity:0,height:0}}
+                className="overflow-hidden">
+                <div className="pb-4">
+                  {m.id==="credit" && (
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/50 text-xs font-semibold uppercase tracking-wider">Secure Card Entry</span>
+                        <div className="flex gap-1.5">
+                          <span className="bg-[#1A1F71] text-white text-[10px] font-bold px-2 py-0.5 rounded">VISA</span>
+                          <span className="bg-[#EB001B] text-white text-[10px] font-bold px-2 py-0.5 rounded">MC</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-white/50 block mb-1.5">{tc.cardNumber}</label>
+                        <input value={cardNum} onChange={e=>setCardNum(e.target.value.replace(/\D/g,"").slice(0,16))}
+                          placeholder="•••• •••• •••• ••••"
+                          className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm font-mono focus:outline-none focus:border-white/50 tracking-widest"/>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-white/50 block mb-1.5">{tc.cardExpiry}</label>
+                          <input value={cardExp} onChange={e=>setCardExp(e.target.value)} placeholder="MM / YY"
+                            className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-white/50"/>
+                        </div>
+                        <div>
+                          <label className="text-xs text-white/50 block mb-1.5">{tc.cardCvv}</label>
+                          <input value={cardCvv} onChange={e=>setCardCvv(e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="•••"
+                            className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-white/50"/>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs text-white/50 block mb-1.5">{tc.cardName}</label>
+                        <input value={cardName} onChange={e=>setCardName(e.target.value)} placeholder="Full name on card"
+                          className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-white/50"/>
+                      </div>
+                    </div>
+                  )}
+                  {m.id==="cliq" && (
+                    <div className="rounded-2xl p-4 border border-emerald-200 bg-emerald-50 space-y-3">
+                      <p className="text-xs text-emerald-700">Powered by JoPACC · Supported by all Jordanian banks</p>
+                      <div>
+                        <label className="text-xs font-medium text-emerald-800 block mb-1.5">CliQ Alias <span className="font-normal">(IBAN or registered mobile)</span></label>
+                        <input value={cliqAlias} onChange={e=>setCliqAlias(e.target.value)} type="text"
+                          placeholder="JO94CBJO… or 07XXXXXXXX"
+                          className="w-full px-4 py-2.5 rounded-xl border-2 border-emerald-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+                      </div>
+                    </div>
+                  )}
+                  {(m.id==="zain"||m.id==="orange") && (
+                    <div className={`rounded-2xl p-4 border space-y-3 ${m.id==="zain"?"border-violet-200 bg-violet-50":"border-orange-200 bg-orange-50"}`}>
+                      <p className={`text-xs ${m.id==="zain"?"text-violet-700":"text-orange-700"}`}>
+                        {m.id==="zain"?"You'll receive a USSD prompt on your Zain line to approve payment.":"You'll receive a confirmation SMS on your Orange line to approve payment."}
+                      </p>
+                      <div>
+                        <label className="text-xs text-muted-foreground block mb-1.5">{tc.walletNumber} <span className="text-red-500">*</span></label>
+                        <input value={walletNum} onChange={e=>setWalletNum(e.target.value.replace(/\D/g,""))} placeholder="07XXXXXXXX" type="tel"
+                          className="w-full px-4 py-2.5 rounded-xl border border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ))}
     </div>
   );
 }
@@ -261,7 +177,7 @@ export default function Checkout() {
   const initialPromo    = params.get("promo") || "";
   const initialPid      = params.get("pid")   || "";
 
-  const { country } = useCountry();
+  const { country, setCountry } = useCountry();
   const { t, dir }  = useLang();
   const tc          = t.checkout;
   const { data: provider } = useGetProvider(providerId, { query: { enabled: !!providerId } });
@@ -270,11 +186,9 @@ export default function Checkout() {
   const patientIdRef = useRef(initialPid || generatePatientId());
   const patientId    = patientIdRef.current;
 
-  const [duration,      setDuration]      = useState(initialDuration);
-  const [date,          setDate]          = useState(initialDate);
-  const [time,          setTime]          = useState(initialTime);
-  const [bookedSlots,   setBookedSlots]   = useState<string[]>([]);
-  const [slotsLoading,  setSlotsLoading]  = useState(false);
+  const [duration]      = useState(initialDuration);
+  const [date]          = useState(initialDate);
+  const [time]          = useState(initialTime);
 
   /* Pre-fill patient details from journey */
   const [patientName,   setPatientName]   = useState(initialName);
@@ -310,23 +224,22 @@ export default function Checkout() {
     if (disc) setAppliedCode({ code: initialPromo.toUpperCase(), discount: disc });
   }, []);
 
+  /* Enforce country from journey URL param */
+  useEffect(() => {
+    const urlCountry = params.get("country");
+    if (urlCountry) {
+      const match = COUNTRY_LIST.find(c => c.code === urlCountry);
+      if (match) setCountry(match);
+    }
+  }, []);
+
   const basePrice  = provider?.sessionPrice ?? 50;
   const { usd, local } = getSessionPrice(basePrice, duration, country);
   const discountAmt = appliedCode ? Math.round(local * appliedCode.discount) : 0;
   const total       = local - discountAmt;
 
-  /* Track whether the initial time came from the journey (don't clear it on first load) */
-  const prefilledTimeRef = useRef(initialTime);
-
   useEffect(()=>{
-    if (!date || !providerId) return;
-    setSlotsLoading(true);
-    /* Only clear the time picker if it wasn't pre-filled from the journey */
-    if (!prefilledTimeRef.current) setTime("");
-    else prefilledTimeRef.current = "";
-    fetchBookedSlots(providerId, date).then(slots=>{
-      setBookedSlots(slots); setSlotsLoading(false);
-    });
+    /* intentionally empty — no slot fetching needed, date/time come from journey */
   }, [date, providerId]);
 
   const applyPromo = () => {
@@ -550,329 +463,265 @@ export default function Checkout() {
 
   /* ── Main form ── */
   return (
-    <div dir={dir} className="min-h-screen bg-background pt-20 pb-16">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{duration:0.4}}>
+    <div dir={dir} className="min-h-screen bg-[#f5f6f8]">
+
+      {/* ── Sticky header ── */}
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-border">
+        <div className="max-w-lg mx-auto px-4 h-14 flex items-center gap-3">
           <button onClick={()=>navigate(-1 as any)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-            <ChevronLeft className="w-4 h-4"/> {tc.backBtn}
+            className="p-2 -ml-2 rounded-xl hover:bg-muted transition-colors">
+            <ChevronLeft className="w-5 h-5 text-foreground"/>
           </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-semibold text-foreground text-base leading-tight">Checkout</h1>
+            {provider && <p className="text-xs text-muted-foreground truncate">{provider.name}</p>}
+          </div>
+          {/* Country badge — enforced from IP, read-only */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/70 text-xs font-medium text-foreground">
+            <MapPin className="w-3 h-3 text-primary"/>
+            <span>{country.flag}</span>
+            <span>{country.currency}</span>
+          </div>
+        </div>
+      </div>
 
-          <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-1">{tc.title}</h1>
-          <p className="text-muted-foreground mb-8">{tc.subtitle}</p>
+      {/* ── Scrollable content ── */}
+      <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:0.3}}
+        className="max-w-lg mx-auto px-4 pt-4 pb-36 space-y-3">
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left column */}
-            <div className="lg:col-span-2 space-y-5">
-
-              {/* Provider summary */}
-              {provider && (
-                <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}}
-                  className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
-                  <img src={provider.imageUrl} alt={provider.name} className="w-16 h-16 rounded-xl object-cover flex-shrink-0"/>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-foreground">{provider.name}</div>
-                    <div className="text-sm text-muted-foreground">{provider.title}</div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400"/>
-                      <span className="text-sm font-medium">{provider.rating}</span>
-                      <span className="text-xs text-muted-foreground">({provider.reviewCount} reviews)</span>
-                    </div>
-                  </div>
-                  <div className="text-end flex-shrink-0">
-                    <div className="text-xs text-muted-foreground">{tc.specialty}</div>
-                    <div className="text-sm font-medium text-primary">{provider.specialty}</div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Patient ID display */}
-              <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.02}}
-                className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Hash className="w-4 h-4 text-primary"/> {tc.patientId}
-                </h3>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/20">
-                  <span className="font-mono font-bold text-primary text-lg tracking-wider">{patientId}</span>
-                  <span className="text-xs text-muted-foreground">Assigned to your session</span>
+        {/* ─── 1. Booking summary card ─── */}
+        {provider && (
+          <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
+            <div className="px-5 pt-5 pb-4 flex items-start gap-4">
+              <img src={provider.imageUrl} alt={provider.name}
+                className="w-16 h-16 rounded-xl object-cover flex-shrink-0 ring-2 ring-border"/>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-foreground">{provider.name}</div>
+                <div className="text-xs text-muted-foreground mt-0.5 truncate">{provider.title}</div>
+                <div className="flex items-center gap-1 mt-1.5">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400"/>
+                  <span className="text-xs font-semibold text-foreground">{provider.rating}</span>
+                  <span className="text-xs text-muted-foreground">({provider.reviewCount} reviews)</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Your name is kept confidential — all communications use this ID.</p>
-              </motion.div>
-
-              {/* Patient details */}
-              <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.04}}
-                className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <User className="w-4 h-4 text-primary"/> Your Details
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                      Full Name <span className="text-red-500">*</span>
-                    </label>
-                    <input value={patientName} onChange={e=>setPatientName(e.target.value)} placeholder="Your full name"
-                      className={`w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring
-                        ${showErrors&&patientName.trim().length<2?"border-red-400 bg-red-50":"border-input"}`}/>
-                    {showErrors&&patientName.trim().length<2&&(
-                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Full name is required</p>
-                    )}
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">
-                      WhatsApp / Phone <span className="text-red-500">*</span>
-                    </label>
-                    <input type="tel" value={patientPhone}
-                      onChange={e=>setPatientPhone(e.target.value.replace(/[^\d+\s()-]/g,""))}
-                      placeholder="+962 7X XXX XXXX"
-                      className={`w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring
-                        ${showErrors&&phoneDigits.length<8?"border-red-400 bg-red-50":"border-input"}`}/>
-                    {showErrors&&phoneDigits.length<8&&(
-                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Valid phone number is required (digits only)</p>
-                    )}
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-muted-foreground block mb-1.5 flex items-center gap-1">
-                      <Mail className="w-3 h-3"/> Email <span className="text-muted-foreground font-normal">(optional)</span>
-                    </label>
-                    <input type="email" value={patientEmail} onChange={e=>setPatientEmail(e.target.value)} placeholder="your@email.com"
-                      className={`w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring
-                        ${patientEmail.trim()&&!emailValid?"border-amber-400 bg-amber-50":"border-input"}`}/>
-                    {patientEmail.trim()&&!emailValid&&(
-                      <p className="text-amber-600 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Please enter a valid email address (e.g. name@domain.com)</p>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Duration */}
-              <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.06}}
-                className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-primary"/> {tc.duration}
-                </h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {SESSION_DURATIONS.map(d=>{
-                    const p = getSessionPrice(basePrice, d.minutes, country);
-                    return (
-                      <button key={d.minutes} onClick={()=>setDuration(d.minutes)}
-                        className={`p-4 rounded-xl border-2 text-center transition-all ${duration===d.minutes?"border-primary bg-primary/5":"border-border hover:border-primary/30"}`}>
-                        <div className="font-bold text-foreground text-lg">{d.minutes}</div>
-                        <div className="text-xs text-muted-foreground mb-1.5">{tc.min}</div>
-                        <div className="font-semibold text-primary text-sm">{country.symbol}{p.local.toLocaleString()}</div>
-                        {d.minutes===90&&<div className="text-xs text-emerald-600 mt-0.5">Best value</div>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-
-              {/* Calendar */}
-              <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.1}}
-                className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary"/> {tc.selectDate}
-                </h3>
-                <CalendarGrid selectedDate={date} onSelect={d=>setDate(d)}/>
-                {date && <div className="mt-3 text-sm text-center text-primary font-medium">{formatDateDisplay(date)}</div>}
-              </motion.div>
-
-              {/* Time slots */}
-              <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.14}}
-                className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-primary"/> {tc.selectTime}
-                  {date&&!slotsLoading&&(
-                    <span className="text-xs text-muted-foreground font-normal ms-auto">
-                      {bookedSlots.length>0
-                        ?`${bookedSlots.length} slot${bookedSlots.length>1?"s":""} taken`
-                        :"All slots available"}
-                    </span>
-                  )}
-                </h3>
-                {!date ? (
-                  <div className="text-sm text-muted-foreground text-center py-6 bg-muted/30 rounded-xl">Select a date above to see available times</div>
-                ) : slotsLoading ? (
-                  <div className="text-sm text-muted-foreground text-center py-6 flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"/>
-                    Checking availability…
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {TIME_SLOTS.map(slot=>{
-                      const isBooked   = bookedSlots.includes(slot);
-                      const isSelected = time===slot;
-                      const rangeLabel = formatSlotRange(slot, duration);
-                      return (
-                        <button key={slot} disabled={isBooked} onClick={()=>!isBooked&&setTime(slot)}
-                          className={`relative py-2.5 px-2 rounded-xl border-2 text-xs font-medium text-center transition-all leading-tight
-                            ${isSelected?"border-primary bg-primary text-primary-foreground shadow-md":""}
-                            ${isBooked?"border-border bg-muted/40 text-muted-foreground/50 cursor-not-allowed":""}
-                            ${!isBooked&&!isSelected?"border-border hover:border-primary/40 text-foreground":""}`}>
-                          {isBooked ? (
-                            <span className="flex flex-col items-center gap-0.5">
-                              <X className="w-3.5 h-3.5 text-red-400"/>
-                              <span className="text-[9px] line-through">{slot}</span>
-                            </span>
-                          ) : rangeLabel}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </motion.div>
-
-              {/* Payment */}
-              <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.18}}
-                className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-primary"/> {tc.paymentMethod}
-                </h3>
-                <PaymentSection
-                  method={payMethod} setMethod={setPayMethod}
-                  cardNum={cardNum} setCardNum={setCardNum}
-                  cardExp={cardExp} setCardExp={setCardExp}
-                  cardCvv={cardCvv} setCardCvv={setCardCvv}
-                  cardName={cardName} setCardName={setCardName}
-                  walletNum={walletNum} setWalletNum={setWalletNum}
-                  cliqAlias={cliqAlias} setCliqAlias={setCliqAlias}
-                  tc={tc}
-                />
-              </motion.div>
-
-              {/* Doxy.me call info */}
-              <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.2}}
-                className="bg-blue-50 border border-blue-200 rounded-2xl p-5 flex items-start gap-3">
-                <Video className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5"/>
-                <div>
-                  <div className="font-semibold text-blue-700 text-sm mb-1 flex items-center gap-2">
-                    <span>Doxy.me · Video Sessions</span>
-                  </div>
-                  <p className="text-xs text-blue-600 leading-relaxed">{tc.doxyNote}</p>
-                  <a href="https://doxy.me" target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-blue-700 font-semibold hover:underline mt-1 inline-block">
-                    Learn more about Doxy.me →
-                  </a>
-                </div>
-              </motion.div>
-
-              {/* Promo */}
-              <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.22}}
-                className="bg-card border border-border rounded-2xl p-5">
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Tag className="w-4 h-4 text-primary"/> {tc.promoCode}
-                </h3>
-                <div className="flex gap-2 mb-3">
-                  <input value={promoInput} onChange={e=>{setPromoInput(e.target.value.toUpperCase());setPromoError("");}}
-                    placeholder={tc.promoPlaceholder}
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring font-mono"/>
-                  <button onClick={applyPromo} className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90">
-                    {tc.apply}
-                  </button>
-                </div>
-                {promoError&&<div className="flex items-center gap-2 text-red-500 text-sm"><AlertCircle className="w-4 h-4"/> {promoError}</div>}
-                {appliedCode&&<div className="flex items-center gap-2 text-emerald-600 text-sm font-medium"><CheckCircle className="w-4 h-4"/><span className="font-mono font-bold">{appliedCode.code}</span> — {Math.round(appliedCode.discount*100)}% {tc.codeApplied}</div>}
-              </motion.div>
-
-              {/* T&C + no-cancel notice */}
-              <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:0.26}} className="space-y-3">
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <div onClick={()=>setAcceptTerms(!acceptTerms)}
-                    className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all ${acceptTerms?"border-primary bg-primary":"border-input group-hover:border-primary/50"}`}>
-                    {acceptTerms&&<CheckCircle className="w-3 h-3 text-white"/>}
-                  </div>
-                  <span className="text-sm text-foreground/80 leading-relaxed">
-                    {tc.acceptTerms} —{" "}
-                    <a href="/contracts" target="_blank" className="text-primary hover:underline">Terms</a> &amp;{" "}
-                    <a href="/contracts" target="_blank" className="text-primary hover:underline">Privacy</a>
-                  </span>
-                </label>
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5"/>
-                  {tc.noCancelNote}
-                </div>
-              </motion.div>
+              </div>
+              <div className="text-end flex-shrink-0">
+                <div className="text-lg font-bold text-primary">{country.symbol}{local.toLocaleString()}</div>
+                <div className="text-xs text-muted-foreground">{duration} min session</div>
+              </div>
             </div>
-
-            {/* Order summary sidebar */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-24">
-                <motion.div initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} transition={{delay:0.1}}
-                  className="bg-card border border-border rounded-2xl p-6">
-                  <h3 className="font-serif text-lg font-bold text-foreground mb-5">{tc.orderSummary}</h3>
-
-                  {/* Invoice lines */}
-                  <div className="space-y-2 mb-4 text-sm">
-                    {provider&&<div className="flex justify-between"><span className="text-muted-foreground">Provider</span><span className="font-medium text-xs text-end">{provider.name}</span></div>}
-                    {date&&<div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium text-xs">{formatDateDisplay(date)}</span></div>}
-                    {time&&<div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="font-medium text-xs">{formatSlotRange(time, duration)}</span></div>}
-                    <div className="flex justify-between"><span className="text-muted-foreground">Format</span><span className="font-medium text-xs flex items-center gap-1"><Video className="w-3 h-3 text-primary"/>Doxy.me</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><span className="font-medium text-xs">{payMethodLabel}</span></div>
-                  </div>
-
-                  <div className="border-t border-border pt-3 space-y-2 mb-5 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">{tc.session} ({duration} {tc.min})</span>
-                      <span className="font-medium">{country.symbol}{local.toLocaleString()}</span>
-                    </div>
-                    {appliedCode&&(
-                      <div className="flex justify-between text-emerald-600">
-                        <span>Promo — {appliedCode.code}</span>
-                        <span>−{country.symbol}{discountAmt.toLocaleString()}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>VAT / Tax</span><span>Included</span>
-                    </div>
-                    <div className="border-t border-border pt-2 flex justify-between font-bold text-foreground">
-                      <span>{tc.total}</span>
-                      <div className="text-end">
-                        <div className="text-primary text-lg">{country.symbol}{total.toLocaleString()}</div>
-                        {country.code!=="US"&&<div className="text-xs font-normal text-muted-foreground">≈ ${usd} USD</div>}
-                      </div>
-                    </div>
-                  </div>
-
-                  {patientName&&(
-                    <div className="bg-muted/40 rounded-xl px-3 py-2.5 mb-4 text-xs">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Patient ID</span><span className="font-mono font-bold text-primary">{patientId}</span></div>
-                    </div>
-                  )}
-
-                  {bookingError&&(
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs mb-4">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5"/> {bookingError}
-                    </div>
-                  )}
-
-                  <button onClick={handleBook} disabled={loading}
-                    className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all ${canBook?"bg-primary text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 shadow-lg":"bg-muted text-muted-foreground cursor-pointer"}`}>
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-                        Processing…
-                      </span>
-                    ) : tc.confirmBook}
-                  </button>
-
-                  <div className="mt-2 text-xs text-muted-foreground text-center space-y-0.5">
-                    {!patientName.trim()&&<p className="text-red-500">⚠ Full name required</p>}
-                    {patientName.trim()&&phoneDigits.length<8&&<p className="text-red-500">⚠ Phone number required</p>}
-                    {patientName.trim()&&phoneDigits.length>=8&&patientEmail.trim()&&!emailValid&&<p className="text-amber-500">⚠ Email format invalid</p>}
-                    {patientName.trim()&&phoneDigits.length>=8&&emailValid&&!date&&<p>Select a date</p>}
-                    {patientName.trim()&&phoneDigits.length>=8&&emailValid&&date&&!time&&<p>Select a time slot</p>}
-                    {patientName.trim()&&phoneDigits.length>=8&&emailValid&&date&&time&&!isPaymentFilled()&&<p>Complete payment details</p>}
-                    {patientName.trim()&&phoneDigits.length>=8&&emailValid&&date&&time&&isPaymentFilled()&&!acceptTerms&&<p>Accept the terms to proceed</p>}
-                  </div>
-
-                  <div className="mt-5 pt-4 border-t border-border flex items-start gap-2">
-                    <Shield className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"/>
-                    <p className="text-xs text-muted-foreground">Fully encrypted & HIPAA-compliant. Bookings are non-refundable.</p>
-                  </div>
-                </motion.div>
+            {/* Session details strip */}
+            <div className="border-t border-border bg-muted/25 px-5 py-3 grid grid-cols-3 divide-x divide-border text-center text-xs">
+              <div className="pr-3">
+                <div className="text-muted-foreground mb-0.5">Date</div>
+                <div className="font-medium text-foreground leading-snug">
+                  {date ? formatDateDisplay(date).split(",")[0] : "—"}
+                </div>
+              </div>
+              <div className="px-3">
+                <div className="text-muted-foreground mb-0.5">Time</div>
+                <div className="font-medium text-foreground">{time ? formatSlotRange(time, duration) : "—"}</div>
+              </div>
+              <div className="pl-3">
+                <div className="text-muted-foreground mb-0.5">Format</div>
+                <div className="font-medium text-primary flex items-center justify-center gap-1">
+                  <Video className="w-3 h-3"/> Video
+                </div>
               </div>
             </div>
           </div>
-        </motion.div>
+        )}
+
+        {/* ─── 2. Your details ─── */}
+        <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
+          <h3 className="font-semibold text-sm text-foreground mb-4 flex items-center gap-2">
+            <User className="w-4 h-4 text-primary"/> Your Details
+          </h3>
+
+          {/* Confidential patient ID */}
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-primary/5 border border-primary/15 mb-4">
+            <Hash className="w-3.5 h-3.5 text-primary flex-shrink-0"/>
+            <span className="text-xs text-muted-foreground flex-1">Patient ID (confidential)</span>
+            <span className="font-mono font-bold text-primary text-sm tracking-wide">{patientId}</span>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input value={patientName} onChange={e=>setPatientName(e.target.value)} placeholder="Your full name"
+                className={`w-full px-4 py-3 rounded-xl border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors
+                  ${showErrors&&patientName.trim().length<2?"border-red-400 bg-red-50/50":"border-input"}`}/>
+              {showErrors&&patientName.trim().length<2&&(
+                <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Full name is required</p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                WhatsApp / Phone <span className="text-red-500">*</span>
+              </label>
+              <input type="tel" value={patientPhone}
+                onChange={e=>setPatientPhone(e.target.value.replace(/[^\d+\s()-]/g,""))}
+                placeholder="+962 7X XXX XXXX"
+                className={`w-full px-4 py-3 rounded-xl border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors
+                  ${showErrors&&phoneDigits.length<8?"border-red-400 bg-red-50/50":"border-input"}`}/>
+              {showErrors&&phoneDigits.length<8&&(
+                <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Valid phone required</p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                Email <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <input type="email" value={patientEmail} onChange={e=>setPatientEmail(e.target.value)}
+                placeholder="your@email.com"
+                className={`w-full px-4 py-3 rounded-xl border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring transition-colors
+                  ${patientEmail.trim()&&!emailValid?"border-amber-400 bg-amber-50/50":"border-input"}`}/>
+              {patientEmail.trim()&&!emailValid&&(
+                <p className="text-amber-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Invalid email format</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ─── 3. Pay with ─── */}
+        <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
+          <h3 className="font-semibold text-sm text-foreground mb-1">Pay with</h3>
+          <PaymentSection
+            method={payMethod} setMethod={setPayMethod}
+            cardNum={cardNum} setCardNum={setCardNum}
+            cardExp={cardExp} setCardExp={setCardExp}
+            cardCvv={cardCvv} setCardCvv={setCardCvv}
+            cardName={cardName} setCardName={setCardName}
+            walletNum={walletNum} setWalletNum={setWalletNum}
+            cliqAlias={cliqAlias} setCliqAlias={setCliqAlias}
+            tc={tc}
+          />
+          {/* PCI security note */}
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+            <Shield className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0"/>
+            <span className="text-[11px] text-muted-foreground">Protected by PCI Data Security Standard</span>
+          </div>
+        </div>
+
+        {/* ─── 4. Save on your session ─── */}
+        <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
+          <h3 className="font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
+            <Tag className="w-4 h-4 text-primary"/> Save on your session
+          </h3>
+          <div className="flex gap-2">
+            <input value={promoInput}
+              onChange={e=>{setPromoInput(e.target.value.toUpperCase());setPromoError("");}}
+              placeholder="Enter voucher code"
+              className="flex-1 px-4 py-2.5 rounded-xl border border-input bg-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring uppercase"/>
+            <button onClick={applyPromo}
+              className="px-5 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">
+              Apply
+            </button>
+          </div>
+          {promoError&&(
+            <p className="text-red-500 text-xs mt-2 flex items-center gap-1.5"><AlertCircle className="w-3 h-3"/> {promoError}</p>
+          )}
+          {appliedCode&&(
+            <p className="text-emerald-600 text-xs mt-2 flex items-center gap-1.5">
+              <CheckCircle className="w-3.5 h-3.5"/>
+              <span className="font-mono font-bold">{appliedCode.code}</span>
+              — {Math.round(appliedCode.discount*100)}% discount applied!
+            </p>
+          )}
+        </div>
+
+        {/* ─── 5. Payment summary ─── */}
+        <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
+          <h3 className="font-semibold text-sm text-foreground mb-4">Payment summary</h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal (incl. VAT)</span>
+              <span className="font-medium">{country.symbol}{local.toLocaleString()}</span>
+            </div>
+            {appliedCode && (
+              <div className="flex justify-between text-emerald-600">
+                <span className="flex items-center gap-2">
+                  <span className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                    Discount
+                  </span>
+                  {appliedCode.code} ({Math.round(appliedCode.discount*100)}%)
+                </span>
+                <span className="font-semibold">−{country.symbol}{discountAmt.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-muted-foreground text-xs">
+              <span>Service fee</span>
+              <span className="bg-muted/60 text-foreground text-[10px] font-medium px-2 py-0.5 rounded">Included</span>
+            </div>
+            <div className="border-t border-border pt-3 flex justify-between items-end">
+              <span className="font-bold text-foreground text-base">Total amount</span>
+              <div className="text-end">
+                <div className="font-bold text-primary text-xl">{country.symbol}{total.toLocaleString()}</div>
+                {country.code!=="US"&&<div className="text-xs text-muted-foreground">≈ ${usd} USD</div>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ─── 6. Terms ─── */}
+        <div className="space-y-2.5">
+          <label className="flex items-start gap-3 cursor-pointer bg-white rounded-2xl border border-border p-4 shadow-sm">
+            <button type="button" onClick={()=>setAcceptTerms(!acceptTerms)}
+              className={`mt-0.5 w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all ${acceptTerms?"border-primary bg-primary":"border-border hover:border-primary/50"}`}>
+              {acceptTerms&&<Check className="w-3 h-3 text-white"/>}
+            </button>
+            <span className="text-xs text-foreground/80 leading-relaxed">
+              By placing this order, I confirm that I have read and agreed with the{" "}
+              <a href="/contracts" target="_blank" className="text-primary hover:underline font-medium">Terms & Conditions</a>
+            </span>
+          </label>
+          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5"/>
+            {tc.noCancelNote}
+          </div>
+        </div>
+
+        {/* Error */}
+        {bookingError&&(
+          <div className="flex items-start gap-2 p-3.5 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5"/> {bookingError}
+          </div>
+        )}
+      </motion.div>
+
+      {/* ── Fixed bottom CTA ── */}
+      <div className="fixed bottom-0 inset-x-0 z-20 bg-white/95 backdrop-blur-sm border-t border-border">
+        <div className="max-w-lg mx-auto px-4 pt-3 pb-6">
+          {/* Payment method indicator */}
+          <div className="flex items-center gap-2 mb-2.5 text-xs text-muted-foreground">
+            <CreditCard className="w-3.5 h-3.5 flex-shrink-0"/>
+            <span className="flex-1 truncate">{payMethodLabel}</span>
+            <ChevronRight className="w-3 h-3"/>
+            <span className="font-semibold text-foreground">{country.symbol}{total.toLocaleString()}</span>
+          </div>
+          <button onClick={handleBook} disabled={loading}
+            className={`w-full py-4 rounded-2xl font-bold text-base transition-all ${canBook&&!loading?"bg-primary text-white hover:opacity-90 active:scale-[0.99] shadow-lg shadow-primary/25":"bg-muted text-muted-foreground cursor-not-allowed"}`}>
+            {loading ? (
+              <span className="flex items-center justify-center gap-2.5">
+                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                Processing…
+              </span>
+            ) : (
+              `Confirm & Pay · ${country.symbol}${total.toLocaleString()}`
+            )}
+          </button>
+          {/* Inline validation hints */}
+          {!canBook && !loading && (
+            <p className="text-center text-xs text-muted-foreground mt-2">
+              {!patientName.trim() ? "Enter your full name to continue" :
+               phoneDigits.length<8 ? "Enter a valid phone number" :
+               patientEmail.trim()&&!emailValid ? "Fix the email format" :
+               !isPaymentFilled() ? "Complete your payment details" :
+               !acceptTerms ? "Accept the terms to confirm" : ""}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
