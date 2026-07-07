@@ -787,16 +787,108 @@ export default function BookingJourney() {
                 )}
 
                 {step===1&&(
-                  <div className="space-y-5">
+                  <div className="space-y-4">
                     <div>
                       <h2 className="font-serif text-2xl font-bold mb-1">{j.medTitle}</h2>
                       <p className="text-muted-foreground text-sm">{j.medSubtitle}</p>
                     </div>
-                    <div className="bg-white rounded-2xl border border-border p-5 space-y-5">
-                      <SelectField label={j.prevTherapyLabel} value={prevTherapy}  onChange={setPrevTherapy}  options={j.therapyOpts}     placeholder="—"/>
-                      <CheckGroup  label={j.prevDxLabel}      options={j.prevDxOptions} selected={prevDx}     onChange={setPrevDx}/>
-                      <CheckGroup  label={j.familyDxLabel}    options={j.familyDxOptions} selected={familyDx} onChange={setFamilyDx}/>
-                      <SelectField label={j.medsLabel}        value={medications}  onChange={setMedications}  options={j.medicationOpts}  placeholder="—"/>
+
+                    {/* Therapy history — single select grid */}
+                    <div className="bg-white rounded-2xl border border-border p-5">
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Heart className="w-4 h-4 text-primary"/>
+                        </div>
+                        <p className="text-sm font-semibold text-foreground leading-snug">{j.prevTherapyLabel}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {j.therapyOpts.map(o=>{
+                          const sel=prevTherapy===o.value;
+                          return (
+                            <button key={o.value} type="button" onClick={()=>setPrevTherapy(o.value)}
+                              className={`flex items-start gap-2 p-3 rounded-xl border-2 text-left text-xs font-medium transition-all leading-snug
+                                ${sel?"border-primary bg-primary/5 text-primary":"border-border bg-white hover:border-primary/30 text-foreground"}`}>
+                              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all
+                                ${sel?"border-primary bg-primary":"border-muted-foreground/40"}`}>
+                                {sel&&<div className="w-1.5 h-1.5 rounded-full bg-white"/>}
+                              </div>
+                              <span>{o.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Previous diagnoses — multi-select chips */}
+                    <div className="bg-white rounded-2xl border border-border p-5">
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                          <Brain className="w-4 h-4 text-blue-500"/>
+                        </div>
+                        <p className="text-sm font-semibold text-foreground leading-snug">{j.prevDxLabel}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {j.prevDxOptions.map(o=>{
+                          const on=prevDx.includes(o);
+                          return (
+                            <button key={o} type="button"
+                              onClick={()=>setPrevDx(prev=>on?prev.filter(x=>x!==o):[...prev,o])}
+                              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full border-2 text-xs font-medium transition-all
+                                ${on?"border-primary bg-primary text-white":"border-border bg-white hover:border-primary/40 text-foreground"}`}>
+                              {on&&<Check className="w-3 h-3 flex-shrink-0"/>}{o}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Family history — multi-select chips */}
+                    <div className="bg-white rounded-2xl border border-border p-5">
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                          <Users className="w-4 h-4 text-amber-500"/>
+                        </div>
+                        <p className="text-sm font-semibold text-foreground leading-snug">{j.familyDxLabel}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {j.familyDxOptions.map(o=>{
+                          const on=familyDx.includes(o);
+                          return (
+                            <button key={o} type="button"
+                              onClick={()=>setFamilyDx(prev=>on?prev.filter(x=>x!==o):[...prev,o])}
+                              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full border-2 text-xs font-medium transition-all
+                                ${on?"border-primary bg-primary text-white":"border-border bg-white hover:border-primary/40 text-foreground"}`}>
+                              {on&&<Check className="w-3 h-3 flex-shrink-0"/>}{o}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Medications — single select grid */}
+                    <div className="bg-white rounded-2xl border border-border p-5">
+                      <div className="flex items-center gap-2.5 mb-4">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                          <Leaf className="w-4 h-4 text-emerald-600"/>
+                        </div>
+                        <p className="text-sm font-semibold text-foreground leading-snug">{j.medsLabel}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {j.medicationOpts.map(o=>{
+                          const sel=medications===o.value;
+                          return (
+                            <button key={o.value} type="button" onClick={()=>setMedications(o.value)}
+                              className={`flex items-start gap-2 p-3 rounded-xl border-2 text-left text-xs font-medium transition-all leading-snug
+                                ${sel?"border-primary bg-primary/5 text-primary":"border-border bg-white hover:border-primary/30 text-foreground"}`}>
+                              <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all
+                                ${sel?"border-primary bg-primary":"border-muted-foreground/40"}`}>
+                                {sel&&<div className="w-1.5 h-1.5 rounded-full bg-white"/>}
+                              </div>
+                              <span>{o.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}
