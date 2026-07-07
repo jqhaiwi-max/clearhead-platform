@@ -629,16 +629,10 @@ export default function BookingJourney() {
             <div className="flex justify-between"><span className="text-muted-foreground">{j.successDateLabel}</span><span className="font-medium">{formatDateLong(date)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">{j.successTimeLabel}</span><span className="font-medium">{slotRange(time,duration)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">{j.successDurationLabel}</span><span className="font-medium">{duration} {j.minuteLabel}</span></div>
-            <div className="flex items-center justify-between"><span className="text-muted-foreground">Video call</span><span className="font-medium flex items-center gap-1"><Video className="w-3.5 h-3.5 text-primary"/>Doxy.me</span></div>
+            <div className="flex items-center justify-between"><span className="text-muted-foreground">Video call</span><span className="font-medium flex items-center gap-1"><Video className="w-3.5 h-3.5 text-primary"/>Video session</span></div>
             <div className="flex justify-between border-t border-border pt-2 font-bold">
               <span>{j.successTotalLabel}</span><span className="text-primary">{formatPrice(total,country)}</span>
             </div>
-          </div>
-
-          {/* Doxy.me note */}
-          <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-xs text-start mb-4">
-            <Video className="w-4 h-4 flex-shrink-0 mt-0.5"/>
-            Your provider will send a Doxy.me room link before your session — no download required.
           </div>
 
           <div className="space-y-3">
@@ -647,16 +641,6 @@ export default function BookingJourney() {
               className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl bg-[#25D366] text-white font-semibold hover:brightness-105 shadow">
               <MessageCircle className="w-5 h-5"/> Notify admin for approval
             </a>
-            <a href={`https://wa.me/?text=${encodeURIComponent(`I just booked a ${duration}-min session with ${provider?.name} on ${formatDateLong(date)} at ${time}.`)}`}
-              target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-[#25D366] text-[#25D366] font-semibold hover:bg-[#25D366]/10">
-              <MessageCircle className="w-5 h-5"/> {j.shareBtn}
-            </a>
-            <button onClick={()=>{navigator.clipboard.writeText("https://clearhead.app/get-started");setCopied(true);setTimeout(()=>setCopied(false),2000);}}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-border font-semibold hover:border-primary/40">
-              {copied?<Check className="w-4 h-4 text-emerald-600"/>:<Copy className="w-4 h-4"/>}
-              {copied?j.copiedBtn:j.copyBtn}
-            </button>
             <button onClick={()=>navigate("/")} className="w-full py-3.5 rounded-2xl bg-primary text-white font-semibold hover:opacity-90">
               {j.homeBtn}
             </button>

@@ -397,8 +397,7 @@ export default function Checkout() {
                   <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{formatDateDisplay(bookingResult.date)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="font-medium">{formatSlotRange(bookingResult.time, duration)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">{tc.duration}</span><span className="font-medium">{duration} {tc.min}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Format</span><span className="font-medium flex items-center gap-1.5"><Video className="w-3.5 h-3.5 text-primary"/> Video — Doxy.me</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Session Link</span><a href="https://doxy.me" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs font-medium">doxy.me</a></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Format</span><span className="font-medium flex items-center gap-1.5"><Video className="w-3.5 h-3.5 text-primary"/> Video session</span></div>
                 </div>
               </div>
 
@@ -421,12 +420,8 @@ export default function Checkout() {
             </div>
           </div>
 
-          {/* Doxy.me + no-cancel notices */}
+          {/* No-cancel notice */}
           <div className="space-y-2.5 mb-5">
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-xs text-start">
-              <Video className="w-4 h-4 flex-shrink-0 mt-0.5"/>
-              <span>{tc.doxyNote}</span>
-            </div>
             <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs text-start">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5"/>
               <span>{tc.noCancelNote}</span>
@@ -439,16 +434,6 @@ export default function Checkout() {
               <MessageCircle className="w-5 h-5"/>
               Send Invoice to Admin via WhatsApp
             </a>
-            <a href={`https://wa.me/?text=${shareMsg}`} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-3 w-full py-3.5 rounded-xl border-2 border-[#25D366] text-[#25D366] font-semibold hover:bg-[#25D366]/10 transition-all">
-              <MessageCircle className="w-5 h-5"/>
-              Share Session Summary via WhatsApp
-            </a>
-            <button onClick={()=>{navigator.clipboard.writeText(`${window.location.origin}/checkout?provider=${providerId}`);setCopied(true);setTimeout(()=>setCopied(false),2000);}}
-              className="flex items-center justify-center gap-3 w-full py-3.5 rounded-xl border-2 border-border bg-card text-foreground font-semibold hover:border-primary/40 transition-all">
-              {copied?<Check className="w-5 h-5 text-emerald-600"/>:<Copy className="w-5 h-5"/>}
-              {copied ? "Copied!" : "Copy Booking Link"}
-            </button>
           </div>
 
           <button onClick={()=>navigate("/appointments")}
