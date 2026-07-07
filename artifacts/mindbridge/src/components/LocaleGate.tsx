@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Check, ChevronRight, Globe, Leaf } from "lucide-react";
+import { useLocation } from "wouter";
 import { useLang, type Lang } from "@/context/LanguageContext";
 import { useCountry } from "@/context/CountryContext";
 import { COUNTRY_LIST } from "@/lib/pricing";
 
 const STORAGE_KEY = "clearhead_locale_set";
+const SESSION_KEY = "clearhead_locale_session";
 
 /* ─── Available languages ────────────────────────────────────── */
 const LANGUAGES: {
@@ -60,6 +62,7 @@ function getCopy(lang: string) {
 export default function LocaleGate() {
   const { lang, setLang } = useLang();
   const { country, setCountry } = useCountry();
+  const [location] = useLocation();
 
   const [visible, setVisible]     = useState(false);
   const [page, setPage]           = useState<"lang" | "country">("lang");
@@ -67,11 +70,17 @@ export default function LocaleGate() {
   const [countryQ, setCountryQ]   = useState("");
   const [selectedCountry, setSelectedCountry] = useState(country);
 
-  /* Show on first visit only */
+  /* Show on first-ever visit globally; also on every /get-started entry (session-scoped) */
   useEffect(() => {
-    const done = localStorage.getItem(STORAGE_KEY);
-    if (!done) setVisible(true);
-  }, []);
+    const globalDone = localStorage.getItem(STORAGE_KEY);
+    if (!globalDone) { setVisible(true); return; }
+
+    const isJourney = location.startsWith("/get-started") || location.startsWith("/book-now");
+    if (isJourney) {
+      const sessionDone = sessionStorage.getItem(SESSION_KEY);
+      if (!sessionDone) setVisible(true);
+    }
+  }, [location]);
 
   const c = getCopy(selectedLang);
   const isRtl = LANGUAGES.find(l => l.code === selectedLang)?.dir === "rtl";
@@ -88,11 +97,13 @@ export default function LocaleGate() {
     }
     setCountry(selectedCountry);
     localStorage.setItem(STORAGE_KEY, "1");
+    sessionStorage.setItem(SESSION_KEY, "1");
     setVisible(false);
   };
 
   const skip = () => {
     localStorage.setItem(STORAGE_KEY, "1");
+    sessionStorage.setItem(SESSION_KEY, "1");
     setVisible(false);
   };
 

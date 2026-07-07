@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, TrendingUp, Scale, Globe, Layers, UserPlus, Languages } from "lucide-react";
+import { Menu, X, ChevronDown, TrendingUp, Scale, Globe, Layers, UserPlus } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 
 export default function Navbar() {
@@ -109,15 +109,17 @@ export default function Navbar() {
 
           {/* Right: Lang toggle + CTA */}
           <div className="flex items-center gap-2">
-            {/* Language toggle */}
-            <button
-              onClick={() => setLang(lang === "en" ? "ar" : "en")}
-              className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-foreground/70 hover:text-foreground hover:bg-muted transition-all"
-              title="Toggle language"
-            >
-              <Languages className="w-4 h-4" />
-              {lang === "en" ? "عربي" : "EN"}
-            </button>
+            {/* Language selector */}
+            <div className="hidden md:flex items-center gap-0.5 p-0.5 rounded-xl border border-border bg-muted/40">
+              {([{ code: "en", flag: "🇬🇧", label: "EN" }, { code: "ar", flag: "🇸🇦", label: "AR" }] as const).map(opt => (
+                <button key={opt.code} onClick={() => setLang(opt.code)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200
+                    ${lang === opt.code ? "bg-white shadow-sm text-foreground" : "text-foreground/50 hover:text-foreground"}`}>
+                  <span>{opt.flag}</span>
+                  <span>{opt.label}</span>
+                </button>
+              ))}
+            </div>
             <Link href="/get-started"
               className="hidden md:inline-flex items-center px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5">
               {t.nav.getStarted}
@@ -159,13 +161,19 @@ export default function Navbar() {
                   </Link>
                 ))}
               </div>
-              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border">
-                <button onClick={() => setLang(lang === "en" ? "ar" : "en")}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-border text-sm font-medium text-foreground/70 hover:bg-muted">
-                  <Languages className="w-4 h-4" />
-                  {lang === "en" ? "عربي" : "English"}
-                </button>
-                <Link href="/get-started" className="flex-1 px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold text-center">
+              <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-border">
+                {/* Mobile language selector */}
+                <div className="flex items-center gap-1 p-1 rounded-xl border border-border bg-muted/40">
+                  {([{ code: "en", flag: "🇬🇧", label: "English" }, { code: "ar", flag: "🇸🇦", label: "العربية" }] as const).map(opt => (
+                    <button key={opt.code} onClick={() => setLang(opt.code)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all
+                        ${lang === opt.code ? "bg-white shadow-sm text-foreground" : "text-foreground/50 hover:text-foreground"}`}>
+                      <span>{opt.flag}</span>
+                      <span dir={opt.code === "ar" ? "rtl" : "ltr"}>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <Link href="/get-started" className="px-4 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold text-center">
                   {t.nav.getStarted}
                 </Link>
               </div>
