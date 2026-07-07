@@ -421,7 +421,7 @@ export default function BookingJourney() {
   const nationalityCountry = COUNTRY_LIST.find(c=>c.code===nationality) ?? globalCountry;
 
   /* Provider data */
-  const { data: allProviders=[] } = useListProviders({ available:true },{query:{staleTime:60000}});
+  const { data: allProviders=[], isLoading: providersLoading } = useListProviders({ available:true },{query:{staleTime:60000}});
   const filteredProviders = (allProviders as Provider[]).filter(p => {
     const spec = p.specialty.toLowerCase()+" "+p.title.toLowerCase();
     return (rec.specialty ? spec.includes(rec.specialty.toLowerCase()) : true)
@@ -844,48 +844,79 @@ export default function BookingJourney() {
                     <div>
                       <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">{j.bookingPhase}</p>
                       <h2 className="font-serif text-2xl font-bold mb-1">{j.bookingTitle}</h2>
-                      <p className="text-sm text-muted-foreground">
-                        {j.bookingSubtitleBase} <span className="font-semibold text-foreground">{recText.label}</span>.
-                        {nationalityCountry&&<> {j.bookingSubtitleCurrency} <span className="font-semibold">{nationalityCountry.currency}</span>.</>}
-                      </p>
+                      {recText&&(
+                        <p className="text-sm text-muted-foreground">
+                          {j.bookingSubtitleBase} <span className="font-semibold text-foreground">{recText.label}</span>.
+                          {nationalityCountry&&<> {j.bookingSubtitleCurrency} <span className="font-semibold">{nationalityCountry.currency}</span>.</>}
+                        </p>
+                      )}
                     </div>
                     <div className="relative">
                       <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
                       <input value={provSearch} onChange={e=>setProvSearch(e.target.value)} placeholder={j.searchPH}
                         className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
                     </div>
-                    <div className="max-h-[560px] overflow-y-auto space-y-5 pr-0.5">
-                      {filteredProviders.length>0&&(
-                        <div>
-                          <div className="flex items-center gap-2 mb-3">
-                            <Sparkles className="w-4 h-4 text-amber-500"/>
-                            <span className="text-sm font-semibold">{j.recommendedSection}</span>
+
+                    {/* Loading skeleton */}
+                    {providersLoading&&(
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {[1,2,3,4,5,6].map(i=>(
+                          <div key={i} className="rounded-2xl border border-border bg-white overflow-hidden animate-pulse">
+                            <div className="w-full h-40 bg-muted"/>
+                            <div className="p-3.5 space-y-2">
+                              <div className="h-3 bg-muted rounded w-3/4"/>
+                              <div className="h-2.5 bg-muted rounded w-1/2"/>
+                              <div className="h-2.5 bg-muted rounded w-2/3"/>
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {filteredProviders.map(p=>(
-                              <ProviderCard key={p.id} p={p} selected={provider?.id===p.id} onSelect={()=>setProvider(p)} country={nationalityCountry} recommended/>
-                            ))}
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Provider lists */}
+                    {!providersLoading&&(
+                      <div className="space-y-5">
+                        {filteredProviders.length>0&&(
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <Sparkles className="w-4 h-4 text-amber-500"/>
+                              <span className="text-sm font-semibold">{j.recommendedSection}</span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                              {filteredProviders.map(p=>(
+                                <ProviderCard key={p.id} p={p} selected={provider?.id===p.id} onSelect={()=>setProvider(p)} country={nationalityCountry} recommended/>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {otherProviders.length>0&&(
-                        <div>
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="flex-1 h-px bg-border"/>
-                            <span className="text-xs text-muted-foreground font-medium">{j.otherSection}</span>
-                            <div className="flex-1 h-px bg-border"/>
+                        )}
+                        {otherProviders.length>0&&(
+                          <div>
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="flex-1 h-px bg-border"/>
+                              <span className="text-xs text-muted-foreground font-medium">{j.otherSection}</span>
+                              <div className="flex-1 h-px bg-border"/>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                              {otherProviders.map(p=>(
+                                <ProviderCard key={p.id} p={p} selected={provider?.id===p.id} onSelect={()=>setProvider(p)} country={nationalityCountry} recommended={false}/>
+                              ))}
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {otherProviders.map(p=>(
-                              <ProviderCard key={p.id} p={p} selected={provider?.id===p.id} onSelect={()=>setProvider(p)} country={nationalityCountry} recommended={false}/>
-                            ))}
+                        )}
+                        {(allProviders as Provider[]).length>0&&filteredProviders.length===0&&otherProviders.length===0&&(
+                          <div className="text-center py-16 text-muted-foreground text-sm">{j.noProviders}</div>
+                        )}
+                        {(allProviders as Provider[]).length===0&&!providersLoading&&(
+                          <div className="text-center py-10 text-muted-foreground text-sm">
+                            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                              <Search className="w-5 h-5 text-muted-foreground/60"/>
+                            </div>
+                            <p>{j.noProviders}</p>
                           </div>
-                        </div>
-                      )}
-                      {filteredProviders.length===0&&otherProviders.length===0&&(
-                        <div className="text-center py-16 text-muted-foreground text-sm">{j.noProviders}</div>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    )}
+
                     {provider&&(
                       <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 border border-primary/20">
@@ -1046,11 +1077,6 @@ export default function BookingJourney() {
                         <AlertCircle className="w-4 h-4 flex-shrink-0"/> {bookErr}
                       </div>
                     )}
-                    <button onClick={handleBook} disabled={!acceptTerms||loading}
-                      className={`w-full py-4 rounded-2xl font-semibold text-sm transition-all
-                        ${acceptTerms?"bg-primary text-white hover:opacity-90 hover:-translate-y-0.5 shadow-lg":"bg-muted text-muted-foreground cursor-not-allowed"}`}>
-                      {loading?<span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>…</span>:j.confirmBtn}
-                    </button>
                     <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                       <Shield className="w-3.5 h-3.5 text-primary"/> {j.securityNote}
                     </div>
@@ -1081,36 +1107,47 @@ export default function BookingJourney() {
             if(isScreeningQ) return <div className="flex-1 text-center text-xs text-muted-foreground">{j.tapToAnswer}</div>;
 
             const canContinue = (()=>{
-              if(phase===0&&step===0) return !!careType;
+              if(phase===0&&step===0)  return !!careType;
               if(phase===0&&step===11) return true;
-              if(phase===0) return true;
-              if(phase===1&&step===0) return firstName.trim().length>=1&&lastName.trim().length>=1;
-              if(phase===1) return true;
-              if(phase===2) return contactDetail.trim().length>=3;
-              if(phase===3&&step===0) return !!provider;
-              if(phase===3&&step===1) return !!duration;
-              if(phase===3&&step===2) return !!date;
-              if(phase===3&&step===3) return !!time;
-              return true;
+              if(phase===0)            return true;
+              if(phase===1&&step===0)  return firstName.trim().length>=1&&lastName.trim().length>=1;
+              if(phase===1)            return true;
+              if(phase===2)            return contactDetail.trim().length>=3;
+              if(phase===3&&step===0)  return !!provider && !providersLoading;
+              if(phase===3&&step===1)  return !!duration;
+              if(phase===3&&step===2)  return !!date;
+              if(phase===3&&step===3)  return !!time;
+              if(phase===3&&step===4)  return acceptTerms && !loading;
+              return false;
             })();
 
             const isLastInPhase = (phase===0&&step===11)||(phase===1&&step===2)||(phase===2&&step===0);
+            const isBookStep    = phase===3&&step===4;
 
             const label = (()=>{
-              if(phase===0&&step===0) return j.careTypeStart;
+              if(phase===0&&step===0)  return j.careTypeStart;
               if(phase===0&&step===11) return j.continueToProfile;
-              if(phase===1&&step===2) return j.continueToPrefs;
-              if(phase===2&&step===0) return j.findProvider;
-              if(phase===3&&step===3) return j.reviewBookingBtn;
+              if(phase===1&&step===2)  return j.continueToPrefs;
+              if(phase===2&&step===0)  return j.findProvider;
+              if(phase===3&&step===3)  return j.reviewBookingBtn;
+              if(isBookStep)           return loading ? "…" : j.confirmBookBtn ?? "Confirm & Book";
               return j.continueBtn;
             })();
 
             return (
-              <button onClick={()=>{ if(isLastInPhase)nextPhase();else{setStepDir(1);setStep(s=>s+1);window.scrollTo({top:0,behavior:"smooth"});} }}
+              <button
+                onClick={()=>{
+                  if(isBookStep){ handleBook(); return; }
+                  if(isLastInPhase) nextPhase();
+                  else{ setStepDir(1); setStep(s=>s+1); window.scrollTo({top:0,behavior:"smooth"}); }
+                }}
                 disabled={!canContinue}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all
                   ${canContinue?"bg-primary text-white hover:opacity-90 hover:-translate-y-0.5 shadow-md":"bg-muted text-muted-foreground cursor-not-allowed"}`}>
-                {label} {canContinue&&<ArrowRight className="w-4 h-4"/>}
+                {loading&&isBookStep
+                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                  : null}
+                {label} {canContinue&&!isBookStep&&<ArrowRight className="w-4 h-4"/>}
               </button>
             );
           })()}
