@@ -363,7 +363,7 @@ async function bookAppointment(body:object) {
 ═══════════════════════════════════════════════════════════════ */
 export default function BookingJourney() {
   const [,navigate]  = useLocation();
-  const { t, dir }   = useLang();
+  const { t, dir, lang } = useLang();
   const j            = t.journey;
   const { country: globalCountry, setCountry: setGlobalCountry } = useCountry();
 
@@ -840,19 +840,33 @@ export default function BookingJourney() {
                           <span>{nationalityCountry.flag}</span>
                           <span className="text-muted-foreground font-semibold">{nationalityCountry.dialCode}</span>
                         </div>
-                        <input type="tel" value={contactDetail} onChange={e=>setContactDetail(e.target.value)}
+                        <input type="tel" value={contactDetail}
+                          onChange={e=>setContactDetail(e.target.value.replace(/\D/g,""))}
                           placeholder={j.whatsappPH}
-                          className="flex-1 px-4 py-3 rounded-xl border-2 border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary"/>
+                          className={`flex-1 px-4 py-3 rounded-xl border-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary
+                            ${contactDetail.trim()&&contactDetail.replace(/\D/g,"").length<7?"border-red-400 bg-red-50":"border-input"}`}/>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-1">{nationalityCountry.dialCode} + {j.localNumberHint??"local number"}</p>
+                      {contactDetail.trim()&&contactDetail.replace(/\D/g,"").length<7&&(
+                        <p className="text-red-500 text-[11px] mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Enter a valid phone number (digits only)</p>
+                      )}
+                      {!contactDetail.trim()&&(
+                        <p className="text-[11px] text-muted-foreground mt-1">{nationalityCountry.dialCode} + {j.localNumberHint??"local number"}</p>
+                      )}
                     </div>
                   ):(
-                    <TextField
-                      label={j.emailInputLabel}
-                      value={contactDetail} onChange={setContactDetail}
-                      placeholder={j.emailPH}
-                      type="email" required
-                    />
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                        {j.emailInputLabel}
+                        <span className="text-muted-foreground font-normal ms-1">({lang==="ar"?"اختياري":"optional"})</span>
+                      </label>
+                      <input type="email" value={contactDetail} onChange={e=>setContactDetail(e.target.value)}
+                        placeholder={j.emailPH}
+                        className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary
+                          ${contactDetail.trim()&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactDetail.trim())?"border-amber-400 bg-amber-50":"border-input"}`}/>
+                      {contactDetail.trim()&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactDetail.trim())&&(
+                        <p className="text-amber-600 text-[11px] mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Use a valid format: name@domain.com</p>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -1180,7 +1194,10 @@ export default function BookingJourney() {
               if(phase===0)            return true;
               if(phase===1&&step===0)  return true;
               if(phase===1)            return true;
-              if(phase===2)            return contactDetail.trim().length>=3;
+              if(phase===2) {
+                if(contactMethod==="whatsapp") return contactDetail.replace(/\D/g,"").length>=7;
+                return !contactDetail.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactDetail.trim());
+              }
               if(phase===3&&step===0)  return !!provider && !providersLoading;
               if(phase===3&&step===1)  return !!duration;
               if(phase===3&&step===2)  return !!date;

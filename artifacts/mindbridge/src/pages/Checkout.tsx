@@ -42,7 +42,7 @@ const MONTH_NAMES = ["January","February","March","April","May","June","July","A
 const ADMIN_WHATSAPP = "00962770403270";
 const ADMIN_EMAIL    = "jamal_alqhaiwi@yahoo.com";
 
-type PayMethod = "credit" | "zain" | "orange" | "clickpay";
+type PayMethod = "credit" | "zain" | "orange" | "cliq";
 
 /* ─── Calendar ─────────────────────────────────────── */
 function CalendarGrid({ selectedDate, onSelect }: { selectedDate: string; onSelect: (d: string) => void }) {
@@ -119,20 +119,21 @@ function formatDateDisplay(dateStr: string) {
 }
 
 /* ─── Payment section ──────────────────────────────── */
-function PaymentSection({ method, setMethod, cardNum, setCardNum, cardExp, setCardExp, cardCvv, setCardCvv, cardName, setCardName, walletNum, setWalletNum, tc }: {
+function PaymentSection({ method, setMethod, cardNum, setCardNum, cardExp, setCardExp, cardCvv, setCardCvv, cardName, setCardName, walletNum, setWalletNum, cliqAlias, setCliqAlias, tc }: {
   method: PayMethod; setMethod: (m: PayMethod) => void;
   cardNum: string; setCardNum: (v: string) => void;
   cardExp: string; setCardExp: (v: string) => void;
   cardCvv: string; setCardCvv: (v: string) => void;
   cardName: string; setCardName: (v: string) => void;
   walletNum: string; setWalletNum: (v: string) => void;
+  cliqAlias: string; setCliqAlias: (v: string) => void;
   tc: ReturnType<typeof useLang>["t"]["checkout"];
 }) {
-  const methods: {id: PayMethod; label: string; icon: React.ReactNode; color: string}[] = [
-    { id: "credit",   label: tc.payCredit,   icon: <CreditCard className="w-5 h-5"/>, color: "text-blue-600" },
-    { id: "clickpay", label: tc.payClickPay, icon: <span className="text-base font-bold">🇯🇴</span>,        color: "text-green-700" },
-    { id: "zain",     label: tc.payZain,     icon: <Smartphone className="w-5 h-5"/>,  color: "text-violet-600" },
-    { id: "orange",   label: tc.payOrange,   icon: <Smartphone className="w-5 h-5"/>,  color: "text-orange-500" },
+  const methods: {id: PayMethod; label: string; icon: React.ReactNode; desc: string}[] = [
+    { id: "credit", label: tc.payCredit,  icon: <CreditCard className="w-5 h-5"/>, desc: "Visa · Mastercard" },
+    { id: "cliq",   label: "CliQ",        icon: <span className="text-lg">🏦</span>, desc: "Jordan bank transfer" },
+    { id: "zain",   label: tc.payZain,    icon: <Smartphone className="w-5 h-5"/>,  desc: "Zain Cash wallet" },
+    { id: "orange", label: tc.payOrange,  icon: <Smartphone className="w-5 h-5"/>,  desc: "Orange Money wallet" },
   ];
 
   return (
@@ -140,21 +141,24 @@ function PaymentSection({ method, setMethod, cardNum, setCardNum, cardExp, setCa
       <div className="grid grid-cols-2 gap-3">
         {methods.map(m=>(
           <button key={m.id} onClick={()=>setMethod(m.id)}
-            className={`flex items-center gap-2.5 p-3.5 rounded-xl border-2 text-sm font-semibold transition-all
-              ${method===m.id?"border-primary bg-primary/5":"border-border hover:border-primary/30 bg-card"}`}>
-            <span className={method===m.id?"text-primary":m.color}>{m.icon}</span>
-            <span className={method===m.id?"text-primary":"text-foreground"}>{m.label}</span>
-            {method===m.id&&<Check className="w-4 h-4 text-primary ms-auto"/>}
+            className={`flex items-start gap-3 p-3.5 rounded-xl border-2 text-sm transition-all
+              ${method===m.id?"border-primary bg-primary/5 shadow-sm":"border-border hover:border-primary/30 bg-card"}`}>
+            <span className={`mt-0.5 ${method===m.id?"text-primary":"text-muted-foreground"}`}>{m.icon}</span>
+            <div className="flex-1 text-start">
+              <div className={`font-semibold text-sm ${method===m.id?"text-primary":"text-foreground"}`}>{m.label}</div>
+              <div className="text-[11px] text-muted-foreground leading-snug">{m.desc}</div>
+            </div>
+            {method===m.id&&<Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5"/>}
           </button>
         ))}
       </div>
 
       <AnimatePresence mode="wait">
-        {(method==="credit"||method==="clickpay") && (
+        {method==="credit" && (
           <motion.div key="card" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}
             className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-white/60 text-xs font-semibold uppercase tracking-wider">{method==="clickpay"?"ClickPay · Jordan":"Secure Card Payment"}</span>
+              <span className="text-white/60 text-xs font-semibold uppercase tracking-wider">Secure Card Payment</span>
               <div className="flex gap-2">
                 <span className="bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">VISA</span>
                 <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded">MC</span>
@@ -164,8 +168,7 @@ function PaymentSection({ method, setMethod, cardNum, setCardNum, cardExp, setCa
               <label className="text-xs text-white/50 block mb-1.5">{tc.cardNumber}</label>
               <input value={cardNum} onChange={e=>setCardNum(e.target.value.replace(/\D/g,"").slice(0,16))}
                 placeholder="•••• •••• •••• ••••"
-                className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm font-mono focus:outline-none focus:border-white/50 tracking-widest"
-              />
+                className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm font-mono focus:outline-none focus:border-white/50 tracking-widest"/>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -181,13 +184,37 @@ function PaymentSection({ method, setMethod, cardNum, setCardNum, cardExp, setCa
             </div>
             <div>
               <label className="text-xs text-white/50 block mb-1.5">{tc.cardName}</label>
-              <input value={cardName} onChange={e=>setCardName(e.target.value)} placeholder="Full name"
+              <input value={cardName} onChange={e=>setCardName(e.target.value)} placeholder="Full name on card"
                 className="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-white/50"/>
             </div>
             <div className="flex items-center gap-2 pt-1">
               <Shield className="w-3.5 h-3.5 text-white/40"/>
               <span className="text-xs text-white/40">256-bit SSL encrypted · PCI-DSS compliant</span>
             </div>
+          </motion.div>
+        )}
+
+        {method==="cliq" && (
+          <motion.div key="cliq" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-8}}
+            className="rounded-2xl p-5 space-y-3 border-2 border-emerald-200 bg-emerald-50">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🏦</span>
+              <div>
+                <span className="font-bold text-sm text-emerald-800">CliQ — Jordan Instant Payment</span>
+                <p className="text-xs text-emerald-700">Powered by JoPACC · All Jordanian banks</p>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-emerald-800 block mb-1.5">
+                Your CliQ Alias <span className="font-normal text-emerald-700">(IBAN or registered mobile)</span>
+              </label>
+              <input value={cliqAlias} onChange={e=>setCliqAlias(e.target.value)} type="text"
+                placeholder="JO94CBJO… or 07XXXXXXXX"
+                className="w-full px-4 py-2.5 rounded-xl border-2 border-emerald-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"/>
+            </div>
+            <p className="text-xs text-emerald-700 leading-relaxed">
+              Enter your Jordan IBAN (starting JO) or the mobile number registered with your bank for CliQ. You will receive a payment request to approve.
+            </p>
           </motion.div>
         )}
 
@@ -201,8 +228,8 @@ function PaymentSection({ method, setMethod, cardNum, setCardNum, cardExp, setCa
               </span>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">{tc.walletNumber}</label>
-              <input value={walletNum} onChange={e=>setWalletNum(e.target.value)} placeholder="+962 7X XXX XXXX" type="tel"
+              <label className="text-xs text-muted-foreground block mb-1.5">{tc.walletNumber} <span className="text-red-500">*</span></label>
+              <input value={walletNum} onChange={e=>setWalletNum(e.target.value.replace(/\D/g,""))} placeholder="07XXXXXXXX" type="tel"
                 className="w-full px-4 py-2.5 rounded-xl border border-input bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -261,6 +288,10 @@ export default function Checkout() {
   const [cardCvv,    setCardCvv]    = useState("");
   const [cardName,   setCardName]   = useState("");
   const [walletNum,  setWalletNum]  = useState("");
+  const [cliqAlias,  setCliqAlias]  = useState("");
+
+  /* Validation */
+  const [showErrors, setShowErrors] = useState(false);
 
   const basePrice  = provider?.sessionPrice ?? 50;
   const { usd, local } = getSessionPrice(basePrice, duration, country);
@@ -282,34 +313,63 @@ export default function Checkout() {
     else       { setAppliedCode(null); setPromoError(tc.invalidCode); }
   };
 
+  const emailValid = !patientEmail.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patientEmail.trim());
+  const phoneDigits = patientPhone.replace(/\D/g, "");
+
   const isPaymentFilled = () => {
-    if (payMethod==="credit"||payMethod==="clickpay") return cardNum.length>=15&&cardExp.length>=4&&cardCvv.length>=3&&cardName.trim().length>=2;
-    return walletNum.trim().length>=8;
+    if (payMethod==="credit") return cardNum.length>=15&&cardExp.length>=4&&cardCvv.length>=3&&cardName.trim().length>=2;
+    if (payMethod==="cliq")   return cliqAlias.trim().length>=10;
+    return walletNum.replace(/\D/g,"").length>=8;
   };
 
   const canBook =
     date && time && acceptTerms && !!provider &&
     patientName.trim().length >= 2 &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patientEmail) &&
+    phoneDigits.length >= 8 &&
+    emailValid &&
     isPaymentFilled();
+
+  const payMethodLabel = { credit: "Credit/Debit Card", cliq: "CliQ (Jordan Bank Transfer)", zain: "Zain Cash", orange: "Orange Money" }[payMethod];
 
   const buildAdminMsg = (id: number) => {
     const dateStr = formatDateDisplay(date);
-    return [
-      `🏥 *New Clearhead Booking — Pending Approval*`,
-      `Patient ID: *${patientId}*`,
-      `Provider: *${provider?.name}*`,
-      `Date: ${dateStr} at ${time}`,
-      `Duration: ${duration} min`,
-      `Payment: ${payMethod.toUpperCase()} · ${country.symbol}${total.toLocaleString()}`,
-      `Booking #${id}`,
+    const endTime = (() => { const [h,m]=time.split(":").map(Number); const t=h*60+m+duration; return `${String(Math.floor(t/60)%24).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`; })();
+    const lines = [
+      `🏥 *CLEARHEAD — BOOKING CONFIRMATION*`,
+      `━━━━━━━━━━━━━━━━━━━━━━`,
       ``,
-      `Reply to this message to approve or reject.`,
-    ].join("\n");
+      `📋 *PATIENT DETAILS*`,
+      `Patient ID:  *${patientId}*`,
+      `Full Name:   ${patientName}`,
+      `Phone:       ${patientPhone || "—"}`,
+      patientEmail ? `Email:       ${patientEmail}` : null,
+      ``,
+      `👨‍⚕️ *SESSION DETAILS*`,
+      `Provider:    *${provider?.name}*`,
+      `Specialty:   ${provider?.specialty ?? "—"}`,
+      `Date:        ${dateStr}`,
+      `Time:        ${time} – ${endTime} (${duration} min)`,
+      `Format:      🎥 Video — Doxy.me`,
+      ``,
+      `💳 *PAYMENT BREAKDOWN*`,
+      `Session Fee: ${country.symbol}${local.toLocaleString()}`,
+      appliedCode ? `Promo (${appliedCode.code}):  −${country.symbol}${discountAmt.toLocaleString()}` : null,
+      `─────────────────────`,
+      `Total Paid:  *${country.symbol}${total.toLocaleString()}*${country.code!=="US" ? ` (≈ $${usd} USD)` : ""}`,
+      `Method:      ${payMethodLabel}`,
+      `Booking #:   ${id}`,
+      ``,
+      `🔗 *COMMUNICATION*`,
+      `Session Link: https://doxy.me`,
+      `WhatsApp Admin: wa.me/${ADMIN_WHATSAPP}`,
+      ``,
+      `⚠️ _Please approve or contact patient directly._`,
+    ].filter((l): l is string => l !== null);
+    return lines.join("\n");
   };
 
   const handleBook = async () => {
-    if (!canBook) return;
+    if (!canBook) { setShowErrors(true); return; }
     setLoading(true); setBookingError("");
     try {
       const result = await createAppointment({
@@ -341,7 +401,20 @@ export default function Checkout() {
     : "#";
 
   const shareMsg = bookingResult && provider
-    ? encodeURIComponent(`I just booked a ${duration}-min session with ${provider.name} on ${formatDateDisplay(bookingResult.date)} at ${time}.\n\nBook your own on Clearhead: ${window.location.origin}/checkout?provider=${providerId}`)
+    ? encodeURIComponent([
+        `📋 *CLEARHEAD — SESSION SUMMARY*`,
+        `━━━━━━━━━━━━━━━━━━━`,
+        `Provider: *${provider.name}*`,
+        `Date: ${formatDateDisplay(bookingResult.date)}`,
+        `Time: ${formatSlotRange(bookingResult.time, duration)}`,
+        `Format: 🎥 Video (Doxy.me)`,
+        `Session Link: https://doxy.me`,
+        ``,
+        `Need mental health support? Book on Clearhead:`,
+        `${window.location.origin}/checkout?provider=${providerId}`,
+        ``,
+        `🔗 Contact us via WhatsApp: wa.me/${ADMIN_WHATSAPP}`,
+      ].join("\n"))
     : "";
 
   /* ── Success screen ── */
@@ -362,74 +435,91 @@ export default function Checkout() {
             <span className="text-sm font-mono font-bold text-primary">{patientId}</span>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-5 text-start mb-5 space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{tc.patientId}</span>
-              <span className="font-mono font-bold text-primary">{patientId}</span>
+          {/* ── Invoice breakdown ── */}
+          <div className="bg-card border border-border rounded-2xl overflow-hidden text-start mb-5">
+            <div className="bg-muted/50 px-5 py-3 border-b border-border">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">BOOKING INVOICE</p>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{tc.provider}</span>
-              <span className="font-medium">{provider?.name}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Date</span>
-              <span className="font-medium">{formatDateDisplay(bookingResult.date)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Time</span>
-              <span className="font-medium">{formatSlotRange(bookingResult.time, duration)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{tc.duration}</span>
-              <span className="font-medium">{duration} {tc.min}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{tc.callPlatform}</span>
-              <span className="font-medium flex items-center gap-1"><Video className="w-3.5 h-3.5 text-primary"/> Doxy.me</span>
-            </div>
-            <div className="border-t border-border pt-3 flex justify-between font-bold text-foreground">
-              <span>{tc.total}</span>
-              <span className="text-primary">{country.symbol}{total.toLocaleString()}</span>
+            <div className="px-5 py-4 space-y-2.5 text-sm">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Patient</p>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Patient ID</span>
+                <span className="font-mono font-bold text-primary text-xs">{patientId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Name</span>
+                <span className="font-medium">{patientName}</span>
+              </div>
+              {patientPhone&&<div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span className="font-medium">{patientPhone}</span></div>}
+              {patientEmail&&<div className="flex justify-between"><span className="text-muted-foreground">Email</span><span className="font-medium text-xs">{patientEmail}</span></div>}
+
+              <div className="border-t border-border pt-3 mt-3">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Session</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between"><span className="text-muted-foreground">{tc.provider}</span><span className="font-medium">{provider?.name}</span></div>
+                  {provider?.specialty&&<div className="flex justify-between"><span className="text-muted-foreground">Specialty</span><span className="font-medium">{provider.specialty}</span></div>}
+                  <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium">{formatDateDisplay(bookingResult.date)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="font-medium">{formatSlotRange(bookingResult.time, duration)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">{tc.duration}</span><span className="font-medium">{duration} {tc.min}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Format</span><span className="font-medium flex items-center gap-1.5"><Video className="w-3.5 h-3.5 text-primary"/> Video — Doxy.me</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Session Link</span><a href="https://doxy.me" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs font-medium">doxy.me</a></div>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-3 mt-3">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Payment</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Session fee ({duration} min)</span><span className="font-medium">{country.symbol}{local.toLocaleString()}</span></div>
+                  {appliedCode&&<div className="flex justify-between text-emerald-600"><span>Promo — {appliedCode.code} ({Math.round(appliedCode.discount*100)}%)</span><span>−{country.symbol}{discountAmt.toLocaleString()}</span></div>}
+                  <div className="flex justify-between text-xs text-muted-foreground"><span>VAT / Tax</span><span>Included</span></div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-border flex justify-between font-bold text-foreground text-base">
+                  <span>{tc.total}</span>
+                  <div className="text-end">
+                    <div className="text-primary">{country.symbol}{total.toLocaleString()}</div>
+                    {country.code!=="US"&&<div className="text-xs font-normal text-muted-foreground">≈ ${usd} USD</div>}
+                  </div>
+                </div>
+                <div className="mt-2 flex justify-between text-xs text-muted-foreground"><span>Payment Method</span><span className="font-medium">{payMethodLabel}</span></div>
+              </div>
             </div>
           </div>
 
-          {/* Doxy.me note */}
-          <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-xs text-start mb-5">
-            <Video className="w-4 h-4 flex-shrink-0 mt-0.5"/>
-            {tc.doxyNote}
-          </div>
-
-          {/* No cancellation */}
-          <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs text-start mb-5">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5"/>
-            {tc.noCancelNote}
+          {/* Doxy.me + no-cancel notices */}
+          <div className="space-y-2.5 mb-5">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-700 text-xs text-start">
+              <Video className="w-4 h-4 flex-shrink-0 mt-0.5"/>
+              <span>{tc.doxyNote}</span>
+            </div>
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs text-start">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5"/>
+              <span>{tc.noCancelNote}</span>
+            </div>
           </div>
 
           <div className="space-y-3 mb-6">
             <a href={adminWhatsAppLink} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-[#25D366] text-white font-semibold hover:bg-[#1ebe5c] transition-all hover:-translate-y-0.5 shadow-md">
               <MessageCircle className="w-5 h-5"/>
-              Notify admin via WhatsApp
+              Send Invoice to Admin via WhatsApp
             </a>
             <a href={`https://wa.me/?text=${shareMsg}`} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-3 w-full py-3.5 rounded-xl border-2 border-[#25D366] text-[#25D366] font-semibold hover:bg-[#25D366]/10 transition-all">
               <MessageCircle className="w-5 h-5"/>
-              Share booking via WhatsApp
+              Share Session Summary via WhatsApp
             </a>
             <button onClick={()=>{navigator.clipboard.writeText(`${window.location.origin}/checkout?provider=${providerId}`);setCopied(true);setTimeout(()=>setCopied(false),2000);}}
               className="flex items-center justify-center gap-3 w-full py-3.5 rounded-xl border-2 border-border bg-card text-foreground font-semibold hover:border-primary/40 transition-all">
               {copied?<Check className="w-5 h-5 text-emerald-600"/>:<Copy className="w-5 h-5"/>}
-              {copied ? "Copied!" : "Copy booking link"}
+              {copied ? "Copied!" : "Copy Booking Link"}
             </button>
           </div>
 
           <button onClick={()=>navigate("/appointments")}
             className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
-            View my appointments
+            View My Appointments
           </button>
-          <p className="text-xs text-muted-foreground mt-4">
-            Confirmation sent to <span className="font-medium">{patientEmail}</span>
-          </p>
+          {patientEmail&&<p className="text-xs text-muted-foreground mt-4">Confirmation sent to <span className="font-medium">{patientEmail}</span></p>}
         </motion.div>
       </div>
     );
@@ -493,22 +583,40 @@ export default function Checkout() {
                   <User className="w-4 h-4 text-primary"/> Your Details
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">Full name *</label>
-                    <input value={patientName} onChange={e=>setPatientName(e.target.value)} placeholder="Your full name"
-                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground block mb-1.5 flex items-center gap-1">
-                      <Mail className="w-3 h-3"/> Email *
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                      Full Name <span className="text-red-500">*</span>
                     </label>
-                    <input type="email" value={patientEmail} onChange={e=>setPatientEmail(e.target.value)} placeholder="your@email.com"
-                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+                    <input value={patientName} onChange={e=>setPatientName(e.target.value)} placeholder="Your full name"
+                      className={`w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring
+                        ${showErrors&&patientName.trim().length<2?"border-red-400 bg-red-50":"border-input"}`}/>
+                    {showErrors&&patientName.trim().length<2&&(
+                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Full name is required</p>
+                    )}
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">WhatsApp / Phone (optional)</label>
-                    <input type="tel" value={patientPhone} onChange={e=>setPatientPhone(e.target.value)} placeholder="+962 7X XXX XXXX"
-                      className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"/>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1.5">
+                      WhatsApp / Phone <span className="text-red-500">*</span>
+                    </label>
+                    <input type="tel" value={patientPhone}
+                      onChange={e=>setPatientPhone(e.target.value.replace(/[^\d+\s()-]/g,""))}
+                      placeholder="+962 7X XXX XXXX"
+                      className={`w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring
+                        ${showErrors&&phoneDigits.length<8?"border-red-400 bg-red-50":"border-input"}`}/>
+                    {showErrors&&phoneDigits.length<8&&(
+                      <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Valid phone number is required (digits only)</p>
+                    )}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground block mb-1.5 flex items-center gap-1">
+                      <Mail className="w-3 h-3"/> Email <span className="text-muted-foreground font-normal">(optional)</span>
+                    </label>
+                    <input type="email" value={patientEmail} onChange={e=>setPatientEmail(e.target.value)} placeholder="your@email.com"
+                      className={`w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring
+                        ${patientEmail.trim()&&!emailValid?"border-amber-400 bg-amber-50":"border-input"}`}/>
+                    {patientEmail.trim()&&!emailValid&&(
+                      <p className="text-amber-600 text-xs mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Please enter a valid email address (e.g. name@domain.com)</p>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -603,6 +711,7 @@ export default function Checkout() {
                   cardCvv={cardCvv} setCardCvv={setCardCvv}
                   cardName={cardName} setCardName={setCardName}
                   walletNum={walletNum} setWalletNum={setWalletNum}
+                  cliqAlias={cliqAlias} setCliqAlias={setCliqAlias}
                   tc={tc}
                 />
               </motion.div>
@@ -668,31 +777,41 @@ export default function Checkout() {
                   className="bg-card border border-border rounded-2xl p-6">
                   <h3 className="font-serif text-lg font-bold text-foreground mb-5">{tc.orderSummary}</h3>
 
-                  <div className="space-y-3 mb-5">
-                    <div className="flex justify-between text-sm">
+                  {/* Invoice lines */}
+                  <div className="space-y-2 mb-4 text-sm">
+                    {provider&&<div className="flex justify-between"><span className="text-muted-foreground">Provider</span><span className="font-medium text-xs text-end">{provider.name}</span></div>}
+                    {date&&<div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium text-xs">{formatDateDisplay(date)}</span></div>}
+                    {time&&<div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="font-medium text-xs">{formatSlotRange(time, duration)}</span></div>}
+                    <div className="flex justify-between"><span className="text-muted-foreground">Format</span><span className="font-medium text-xs flex items-center gap-1"><Video className="w-3 h-3 text-primary"/>Doxy.me</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Payment</span><span className="font-medium text-xs">{payMethodLabel}</span></div>
+                  </div>
+
+                  <div className="border-t border-border pt-3 space-y-2 mb-5 text-sm">
+                    <div className="flex justify-between">
                       <span className="text-muted-foreground">{tc.session} ({duration} {tc.min})</span>
-                      <span className="font-medium text-foreground">{country.symbol}{local.toLocaleString()}</span>
+                      <span className="font-medium">{country.symbol}{local.toLocaleString()}</span>
                     </div>
                     {appliedCode&&(
-                      <div className="flex justify-between text-sm text-emerald-600">
-                        <span>Promo ({appliedCode.code})</span>
+                      <div className="flex justify-between text-emerald-600">
+                        <span>Promo — {appliedCode.code}</span>
                         <span>−{country.symbol}{discountAmt.toLocaleString()}</span>
                       </div>
                     )}
-                    <div className="border-t border-border pt-3 flex justify-between font-bold text-foreground">
-                      <span>{tc.total}</span>
-                      <span className="text-primary text-lg">{country.symbol}{total.toLocaleString()}</span>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>VAT / Tax</span><span>Included</span>
                     </div>
-                    {country.code!=="US"&&<div className="text-xs text-muted-foreground text-end">≈ ${usd} USD</div>}
+                    <div className="border-t border-border pt-2 flex justify-between font-bold text-foreground">
+                      <span>{tc.total}</span>
+                      <div className="text-end">
+                        <div className="text-primary text-lg">{country.symbol}{total.toLocaleString()}</div>
+                        {country.code!=="US"&&<div className="text-xs font-normal text-muted-foreground">≈ ${usd} USD</div>}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Summary preview */}
-                  {(date||time||patientName) && (
-                    <div className="bg-muted/40 rounded-xl p-3 mb-4 text-sm space-y-1.5">
-                      {patientName&&<div className="flex justify-between"><span className="text-muted-foreground">ID</span><span className="font-mono font-bold text-primary text-xs">{patientId}</span></div>}
-                      {date&&<div className="flex justify-between"><span className="text-muted-foreground">Date</span><span className="font-medium text-xs">{date.split("-").reverse().join(".")}</span></div>}
-                      {time&&<div className="flex justify-between"><span className="text-muted-foreground">Time</span><span className="font-medium">{formatSlotRange(time, duration)}</span></div>}
-                      <div className="flex justify-between"><span className="text-muted-foreground">Format</span><span className="font-medium flex items-center gap-1"><Video className="w-3 h-3 text-primary"/>Doxy.me</span></div>
+                  {patientName&&(
+                    <div className="bg-muted/40 rounded-xl px-3 py-2.5 mb-4 text-xs">
+                      <div className="flex justify-between"><span className="text-muted-foreground">Patient ID</span><span className="font-mono font-bold text-primary">{patientId}</span></div>
                     </div>
                   )}
 
@@ -702,8 +821,8 @@ export default function Checkout() {
                     </div>
                   )}
 
-                  <button onClick={handleBook} disabled={!canBook||loading}
-                    className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all ${canBook?"bg-primary text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 shadow-lg":"bg-muted text-muted-foreground cursor-not-allowed"}`}>
+                  <button onClick={handleBook} disabled={loading}
+                    className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all ${canBook?"bg-primary text-primary-foreground hover:opacity-90 hover:-translate-y-0.5 shadow-lg":"bg-muted text-muted-foreground cursor-pointer"}`}>
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
@@ -713,12 +832,13 @@ export default function Checkout() {
                   </button>
 
                   <div className="mt-2 text-xs text-muted-foreground text-center space-y-0.5">
-                    {!patientName.trim()&&<p>Enter your name</p>}
-                    {patientName.trim()&&!patientEmail.trim()&&<p>Enter your email</p>}
-                    {patientName.trim()&&patientEmail.trim()&&!date&&<p>Select a date</p>}
-                    {patientName.trim()&&patientEmail.trim()&&date&&!time&&<p>Select a time slot</p>}
-                    {patientName.trim()&&patientEmail.trim()&&date&&time&&!isPaymentFilled()&&<p>Complete payment details</p>}
-                    {patientName.trim()&&patientEmail.trim()&&date&&time&&isPaymentFilled()&&!acceptTerms&&<p>Accept the terms</p>}
+                    {!patientName.trim()&&<p className="text-red-500">⚠ Full name required</p>}
+                    {patientName.trim()&&phoneDigits.length<8&&<p className="text-red-500">⚠ Phone number required</p>}
+                    {patientName.trim()&&phoneDigits.length>=8&&patientEmail.trim()&&!emailValid&&<p className="text-amber-500">⚠ Email format invalid</p>}
+                    {patientName.trim()&&phoneDigits.length>=8&&emailValid&&!date&&<p>Select a date</p>}
+                    {patientName.trim()&&phoneDigits.length>=8&&emailValid&&date&&!time&&<p>Select a time slot</p>}
+                    {patientName.trim()&&phoneDigits.length>=8&&emailValid&&date&&time&&!isPaymentFilled()&&<p>Complete payment details</p>}
+                    {patientName.trim()&&phoneDigits.length>=8&&emailValid&&date&&time&&isPaymentFilled()&&!acceptTerms&&<p>Accept the terms to proceed</p>}
                   </div>
 
                   <div className="mt-5 pt-4 border-t border-border flex items-start gap-2">

@@ -6,8 +6,9 @@ import { useLang, type Lang } from "@/context/LanguageContext";
 import { useCountry } from "@/context/CountryContext";
 import { COUNTRY_LIST } from "@/lib/pricing";
 
-const STORAGE_KEY = "clearhead_locale_set";
-const SESSION_KEY = "clearhead_locale_session";
+const STORAGE_KEY  = "clearhead_locale_set";      // localStorage — first-ever visit
+const SESSION_KEY  = "clearhead_locale_session";   // sessionStorage — general first-in-session
+const JOURNEY_KEY  = "clearhead_locale_journey";   // sessionStorage — /get-started per-session
 
 /* ─── Available languages ────────────────────────────────────── */
 const LANGUAGES: {
@@ -70,20 +71,22 @@ export default function LocaleGate() {
   const [countryQ, setCountryQ]   = useState("");
   const [selectedCountry, setSelectedCountry] = useState(country);
 
-  /* Show on first-ever visit globally; also on every /get-started entry (session-scoped) */
+  /* Show on first-ever visit globally; also once per session when entering /get-started */
   useEffect(() => {
-    const globalDone = localStorage.getItem(STORAGE_KEY);
-    if (!globalDone) { setVisible(true); return; }
-
     const isJourney = location.startsWith("/get-started") || location.startsWith("/book-now");
     if (isJourney) {
+      const journeyDone = sessionStorage.getItem(JOURNEY_KEY);
+      if (!journeyDone) { setVisible(true); return; }
+    } else {
+      const globalDone = localStorage.getItem(STORAGE_KEY);
       const sessionDone = sessionStorage.getItem(SESSION_KEY);
-      if (!sessionDone) setVisible(true);
+      if (!globalDone && !sessionDone) setVisible(true);
     }
   }, [location]);
 
   const c = getCopy(selectedLang);
   const isRtl = LANGUAGES.find(l => l.code === selectedLang)?.dir === "rtl";
+  const isJourney = location.startsWith("/get-started") || location.startsWith("/book-now");
 
   const filteredCountries = COUNTRY_LIST.filter(ct =>
     !countryQ ||
@@ -98,12 +101,14 @@ export default function LocaleGate() {
     setCountry(selectedCountry);
     localStorage.setItem(STORAGE_KEY, "1");
     sessionStorage.setItem(SESSION_KEY, "1");
+    if (isJourney) sessionStorage.setItem(JOURNEY_KEY, "1");
     setVisible(false);
   };
 
   const skip = () => {
     localStorage.setItem(STORAGE_KEY, "1");
     sessionStorage.setItem(SESSION_KEY, "1");
+    if (isJourney) sessionStorage.setItem(JOURNEY_KEY, "1");
     setVisible(false);
   };
 
