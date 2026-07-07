@@ -536,7 +536,11 @@ export default function BookingJourney() {
   /* Questionnaire auto-advance — PHQ-9 only (steps 2–10, then 11=results) */
   const answerPhq9 = useCallback((qi:number,val:number)=>{
     setPhq9(prev=>({...prev,[qi]:val}));
-    setTimeout(()=>{ setStepDir(1); setStep(qi<8?2+qi+1:11); },380);
+    setTimeout(()=>{
+      setStepDir(1);
+      if(qi<8) setStep(2+qi+1);
+      else { setPhase(p=>p+1); setStep(0); }
+    },380);
   },[]);
 
   /* Promo */
@@ -744,43 +748,6 @@ export default function BookingJourney() {
                   );
                 })()}
 
-                {/* Step 11: Results */}
-                {step===11&&(
-                  <div className="space-y-5">
-                    <div>
-                      <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">{j.resultsPhase}</p>
-                      <h2 className="font-serif text-2xl font-bold text-foreground mb-1">{j.resultsTitle}</h2>
-                      <p className="text-sm text-muted-foreground">{j.resultsSubtitle}</p>
-                    </div>
-                    {scores.hasRisk&&(
-                      <div className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-200">
-                        <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"/>
-                        <div>
-                          <p className="text-sm font-semibold text-red-700">{j.riskTitle}</p>
-                          <p className="text-xs text-red-600 mt-0.5">{j.riskText}</p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="bg-white rounded-2xl border border-border p-5 space-y-4">
-                      <ScoreBar label="PHQ-9 · Depression" val={scores.phq9} max={27} thresholds={[5,10,15]} levels={j.scoreLevels}/>
-                    </div>
-                    <div className={`rounded-2xl p-5 border-2 ${
-                      rec.urgent?"border-red-200 bg-red-50":
-                      rec.color==="orange"?"border-orange-200 bg-orange-50":
-                      rec.color==="amber" ?"border-amber-200 bg-amber-50":"border-emerald-200 bg-emerald-50"
-                    }`}>
-                      <div className="flex items-start gap-3">
-                        <Sparkles className={`w-5 h-5 flex-shrink-0 mt-0.5 ${rec.urgent?"text-red-500":rec.color==="orange"?"text-orange-500":rec.color==="amber"?"text-amber-500":"text-emerald-600"}`}/>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">{j.recommendedLabel}</p>
-                          <p className="font-semibold text-foreground">{recText.label}</p>
-                          <p className="text-sm text-muted-foreground mt-1">{recText.reason}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-center text-muted-foreground">{j.screeningDisclaimer}</p>
-                  </div>
-                )}
               </>
             )}
 
@@ -1244,7 +1211,6 @@ export default function BookingJourney() {
 
             const canContinue = (()=>{
               if(phase===0&&step===0)  return !!careType;
-              if(phase===0&&step===11) return true;
               if(phase===0)            return true;
               if(phase===1&&step===0)  return true;
               if(phase===1)            return true;
@@ -1260,12 +1226,11 @@ export default function BookingJourney() {
               return false;
             })();
 
-            const isLastInPhase = (phase===0&&step===11)||(phase===1&&step===1)||(phase===2&&step===0);
+            const isLastInPhase = (phase===1&&step===1)||(phase===2&&step===0);
             const isBookStep    = phase===3&&step===4;
 
             const label = (()=>{
               if(phase===0&&step===0)  return j.careTypeStart;
-              if(phase===0&&step===11) return j.continueToProfile;
               if(phase===1&&step===1)  return j.continueToPrefs;
               if(phase===2&&step===0)  return j.findProvider;
               if(phase===3&&step===3)  return j.reviewBookingBtn;
