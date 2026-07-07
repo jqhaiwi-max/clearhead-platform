@@ -1304,7 +1304,7 @@ export default function BookingJourney() {
             const canContinue = (()=>{
               if(phase===0&&step===0)  return !!careType;
               if(phase===0)            return true;
-              if(phase===1&&step===0)  return true;
+              if(phase===1&&step===0)  return !!(firstName.trim()&&lastName.trim()&&dob&&gender&&maritalStatus&&occupation.trim()&&education);
               if(phase===1)            return true;
               if(phase===2) {
                 if(contactMethod==="whatsapp") return contactDetail.replace(/\D/g,"").length>=7;
