@@ -4,6 +4,7 @@ import { appointmentsTable, providersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { CreateAppointmentBody, UpdateAppointmentBody } from "@workspace/api-zod";
 import { sendApprovalRequestEmail, sendDoctorAssignmentEmail } from "../lib/email.js";
+import { writeRateLimiter } from "../middleware/rateLimit.js";
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "jamal_alqhaiwi@yahoo.com";
 
@@ -50,7 +51,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", writeRateLimiter, async (req, res) => {
   try {
     const data = CreateAppointmentBody.parse(req.body);
     const [provider] = await db

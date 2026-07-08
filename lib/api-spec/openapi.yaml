@@ -19,6 +19,11 @@ tags:
     description: Patient testimonial operations
   - name: stats
     description: Platform statistics
+  - name: ratings
+    description: Session rating/feedback operations
+  - name: admin
+    description: Admin-only operations (requires bearer auth)
+security: []
 paths:
   /healthz:
     get:
@@ -99,6 +104,83 @@ paths:
                 $ref: "#/components/schemas/Provider"
         "404":
           description: Provider not found
+    put:
+      operationId: updateProvider
+      tags: [providers]
+      summary: Update a provider (admin only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderInput"
+      responses:
+        "200":
+          description: Updated provider
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Admin access required
+        "404":
+          description: Provider not found
+    delete:
+      operationId: deleteProvider
+      tags: [providers]
+      summary: Delete a provider (admin only)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Provider deleted
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Admin access required
+
+  /appointments/slots:
+    get:
+      operationId: getBookedSlots
+      tags: [appointments]
+      summary: Get booked time slots for a provider on a given date
+      parameters:
+        - name: providerId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Booked slots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bookedSlots:
+                    type: array
+                    items:
+                      type: string
 
   /appointments:
     get:
@@ -249,7 +331,210 @@ paths:
                 items:
                   $ref: "#/components/schemas/Provider"
 
+  /ratings:
+    post:
+      operationId: createRating
+      tags: [ratings]
+      summary: Submit a session rating
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RatingInput"
+      responses:
+        "201":
+          description: Rating created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rating"
+
+  /ratings/provider/{providerId}:
+    get:
+      operationId: listProviderRatings
+      tags: [ratings]
+      summary: List ratings for a provider
+      parameters:
+        - name: providerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of ratings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Rating"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin dashboard stats
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Admin stats
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Admin access required
+
+  /admin/payments:
+    get:
+      operationId: listAdminPayments
+      tags: [admin]
+      summary: List all payments
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: List of payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Admin access required
+    post:
+      operationId: createAdminPayment
+      tags: [admin]
+      summary: Record a new payment
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "201":
+          description: Payment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Admin access required
+
+  /admin/payments/{id}:
+    patch:
+      operationId: updateAdminPayment
+      tags: [admin]
+      summary: Update a payment's status/reference/notes
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentStatusUpdate"
+      responses:
+        "200":
+          description: Updated payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Admin access required
+        "404":
+          description: Payment not found
+    delete:
+      operationId: deleteAdminPayment
+      tags: [admin]
+      summary: Delete a payment
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment deleted
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Admin access required
+
+  /admin/appointments/bulk:
+    patch:
+      operationId: bulkUpdateAppointments
+      tags: [admin]
+      summary: Bulk-update appointment status (e.g. approve multiple)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentBulkUpdate"
+      responses:
+        "200":
+          description: Appointments updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: integer
+                  appointments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Appointment"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Admin access required
+
+  /admin/ratings:
+    get:
+      operationId: listAdminRatings
+      tags: [admin]
+      summary: List most recent ratings (admin view)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: List of ratings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Rating"
+        "401":
+          description: Missing or invalid bearer token
+        "403":
+          description: Admin access required
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase-issued JWT access token; caller's email must be in the server's admin allowlist.
   schemas:
     HealthStatus:
       type: object
@@ -458,3 +743,129 @@ components:
           type: integer
         satisfactionRate:
           type: number
+
+    Payment:
+      type: object
+      required: [id, patientName, providerName, amount, currency, method, status, createdAt]
+      properties:
+        id:
+          type: integer
+        appointmentId:
+          type: ["integer", "null"]
+        patientName:
+          type: string
+        patientPhone:
+          type: ["string", "null"]
+        patientEmail:
+          type: ["string", "null"]
+        providerName:
+          type: string
+        providerId:
+          type: ["integer", "null"]
+        amount:
+          type: integer
+        currency:
+          type: string
+        method:
+          type: string
+        status:
+          type: string
+        reference:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    PaymentInput:
+      type: object
+      required: [patientName, providerName, amount]
+      properties:
+        patientName:
+          type: string
+        patientPhone:
+          type: string
+        patientEmail:
+          type: string
+        providerName:
+          type: string
+        providerId:
+          type: integer
+        appointmentId:
+          type: integer
+        amount:
+          type: integer
+        currency:
+          type: string
+        method:
+          type: string
+        status:
+          type: string
+        reference:
+          type: string
+        notes:
+          type: string
+
+    Rating:
+      type: object
+      required: [id, providerId, patientName, rating, sessionDate, createdAt]
+      properties:
+        id:
+          type: integer
+        appointmentId:
+          type: ["integer", "null"]
+        providerId:
+          type: integer
+        patientName:
+          type: string
+        rating:
+          type: integer
+        mood:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        sessionDate:
+          type: string
+        createdAt:
+          type: string
+
+    RatingInput:
+      type: object
+      required: [providerId, patientName, rating, sessionDate]
+      properties:
+        appointmentId:
+          type: integer
+        providerId:
+          type: integer
+        patientName:
+          type: string
+        rating:
+          type: integer
+        mood:
+          type: string
+        notes:
+          type: string
+        sessionDate:
+          type: string
+
+    PaymentStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+        reference:
+          type: string
+        notes:
+          type: string
+
+    AppointmentBulkUpdate:
+      type: object
+      required: [ids, status]
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]

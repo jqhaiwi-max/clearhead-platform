@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { db, ratingsTable, providersTable } from "@workspace/db";
 import { eq, avg, count } from "drizzle-orm";
+import { writeRateLimiter } from "../middleware/rateLimit.js";
 
 const router = Router();
 
-router.post("/", async (req, res) => {
+router.post("/", writeRateLimiter, async (req, res) => {
   try {
     const { appointmentId, providerId, patientName, rating, mood, notes, sessionDate } = req.body;
     if (!providerId || !patientName || !rating || !sessionDate) {

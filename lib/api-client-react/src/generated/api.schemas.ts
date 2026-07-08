@@ -121,9 +121,107 @@ export interface PlatformStats {
   satisfactionRate: number;
 }
 
+export interface Payment {
+  id: number;
+  /** @nullable */
+  appointmentId?: number | null;
+  patientName: string;
+  /** @nullable */
+  patientPhone?: string | null;
+  /** @nullable */
+  patientEmail?: string | null;
+  providerName: string;
+  /** @nullable */
+  providerId?: number | null;
+  amount: number;
+  currency: string;
+  method: string;
+  status: string;
+  /** @nullable */
+  reference?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface PaymentInput {
+  patientName: string;
+  patientPhone?: string;
+  patientEmail?: string;
+  providerName: string;
+  providerId?: number;
+  appointmentId?: number;
+  amount: number;
+  currency?: string;
+  method?: string;
+  status?: string;
+  reference?: string;
+  notes?: string;
+}
+
+export interface Rating {
+  id: number;
+  /** @nullable */
+  appointmentId?: number | null;
+  providerId: number;
+  patientName: string;
+  rating: number;
+  /** @nullable */
+  mood?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  sessionDate: string;
+  createdAt: string;
+}
+
+export interface RatingInput {
+  appointmentId?: number;
+  providerId: number;
+  patientName: string;
+  rating: number;
+  mood?: string;
+  notes?: string;
+  sessionDate: string;
+}
+
+export interface PaymentStatusUpdate {
+  status?: string;
+  reference?: string;
+  notes?: string;
+}
+
+export type AppointmentBulkUpdateStatus = typeof AppointmentBulkUpdateStatus[keyof typeof AppointmentBulkUpdateStatus];
+
+
+export const AppointmentBulkUpdateStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+  completed: 'completed',
+} as const;
+
+export interface AppointmentBulkUpdate {
+  ids: number[];
+  status: AppointmentBulkUpdateStatus;
+}
+
 export type ListProvidersParams = {
 specialty?: string;
 available?: boolean;
 search?: string;
+};
+
+export type GetBookedSlotsParams = {
+providerId: number;
+date: string;
+};
+
+export type GetBookedSlots200 = {
+  bookedSlots?: string[];
+};
+
+export type BulkUpdateAppointments200 = {
+  updated?: number;
+  appointments?: Appointment[];
 };
 

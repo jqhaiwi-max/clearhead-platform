@@ -7,13 +7,23 @@
  */
 
 export * from './appointment';
+export * from './appointmentBulkUpdate';
+export * from './appointmentBulkUpdateStatus';
 export * from './appointmentInput';
 export * from './appointmentUpdate';
+export * from './bulkUpdateAppointments200';
+export * from './getBookedSlots200';
+export * from './getBookedSlotsParams';
 export * from './healthStatus';
 export * from './listProvidersParams';
+export * from './payment';
+export * from './paymentInput';
+export * from './paymentStatusUpdate';
 export * from './platformStats';
 export * from './provider';
 export * from './providerInput';
+export * from './rating';
+export * from './ratingInput';
 export * from './specialty';
 export * from './testimonial';
 export * from './testimonialInput';

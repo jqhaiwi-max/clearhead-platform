@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, real } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, real, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -21,7 +21,9 @@ export const providersTable = pgTable("providers", {
   phone: text("phone"),
   qualifications: text("qualifications").array(),
   doxyLink: text("doxy_link"),
-});
+}, (t) => [
+  index("providers_specialty_available_idx").on(t.specialty, t.available),
+]);
 
 export const insertProviderSchema = createInsertSchema(providersTable).omit({ id: true });
 export type InsertProvider = z.infer<typeof insertProviderSchema>;

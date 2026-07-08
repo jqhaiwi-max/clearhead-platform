@@ -8,8 +8,11 @@ import {
 } from "@workspace/db";
 import { eq, desc, count, sql, inArray } from "drizzle-orm";
 import { sendDoctorAssignmentEmail } from "../lib/email.js";
+import { requireAdmin } from "../middleware/requireAdmin.js";
 
 const router = Router();
+
+router.use(requireAdmin);
 
 router.get("/stats", async (_req, res) => {
   try {

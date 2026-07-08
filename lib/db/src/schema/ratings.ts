@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,7 +12,9 @@ export const ratingsTable = pgTable("ratings", {
   notes: text("notes"),
   sessionDate: text("session_date").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (t) => [
+  index("ratings_provider_id_idx").on(t.providerId),
+]);
 
 export const insertRatingSchema = createInsertSchema(ratingsTable).omit({ id: true, createdAt: true });
 export type InsertRating = z.infer<typeof insertRatingSchema>;

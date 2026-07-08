@@ -104,6 +104,66 @@ export const GetProviderResponse = zod.object({
 
 
 /**
+ * @summary Update a provider (admin only)
+ */
+export const UpdateProviderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateProviderBody = zod.object({
+  "name": zod.string(),
+  "title": zod.string(),
+  "specialty": zod.string(),
+  "bio": zod.string(),
+  "yearsExperience": zod.number(),
+  "imageUrl": zod.string(),
+  "sessionPrice": zod.number(),
+  "languages": zod.array(zod.string()).optional(),
+  "acceptsInsurance": zod.boolean().optional()
+})
+
+export const UpdateProviderResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "title": zod.string(),
+  "specialty": zod.string(),
+  "bio": zod.string(),
+  "rating": zod.number(),
+  "reviewCount": zod.number(),
+  "yearsExperience": zod.number(),
+  "imageUrl": zod.string(),
+  "available": zod.boolean(),
+  "sessionPrice": zod.number(),
+  "languages": zod.array(zod.string()).nullish(),
+  "acceptsInsurance": zod.boolean().optional(),
+  "nextAvailable": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete a provider (admin only)
+ */
+export const DeleteProviderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteProviderResponse = zod.unknown()
+
+
+/**
+ * @summary Get booked time slots for a provider on a given date
+ */
+export const GetBookedSlotsQueryParams = zod.object({
+  "providerId": zod.coerce.number(),
+  "date": zod.coerce.string()
+})
+
+export const GetBookedSlotsResponse = zod.object({
+  "bookedSlots": zod.array(zod.string()).optional()
+})
+
+
+/**
  * @summary List all appointments
  */
 export const ListAppointmentsResponseItem = zod.object({
@@ -310,5 +370,206 @@ export const GetFeaturedProvidersResponseItem = zod.object({
   "nextAvailable": zod.string().nullish()
 })
 export const GetFeaturedProvidersResponse = zod.array(GetFeaturedProvidersResponseItem)
+
+
+/**
+ * @summary Submit a session rating
+ */
+export const CreateRatingBody = zod.object({
+  "appointmentId": zod.number().optional(),
+  "providerId": zod.number(),
+  "patientName": zod.string(),
+  "rating": zod.number(),
+  "mood": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "sessionDate": zod.string()
+})
+
+export const CreateRatingResponse = zod.object({
+  "id": zod.number(),
+  "appointmentId": zod.number().nullish(),
+  "providerId": zod.number(),
+  "patientName": zod.string(),
+  "rating": zod.number(),
+  "mood": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "sessionDate": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List ratings for a provider
+ */
+export const ListProviderRatingsParams = zod.object({
+  "providerId": zod.coerce.number()
+})
+
+export const ListProviderRatingsResponseItem = zod.object({
+  "id": zod.number(),
+  "appointmentId": zod.number().nullish(),
+  "providerId": zod.number(),
+  "patientName": zod.string(),
+  "rating": zod.number(),
+  "mood": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "sessionDate": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListProviderRatingsResponse = zod.array(ListProviderRatingsResponseItem)
+
+
+/**
+ * @summary Get admin dashboard stats
+ */
+export const GetAdminStatsResponse = zod.unknown()
+
+
+/**
+ * @summary List all payments
+ */
+export const ListAdminPaymentsResponseItem = zod.object({
+  "id": zod.number(),
+  "appointmentId": zod.number().nullish(),
+  "patientName": zod.string(),
+  "patientPhone": zod.string().nullish(),
+  "patientEmail": zod.string().nullish(),
+  "providerName": zod.string(),
+  "providerId": zod.number().nullish(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "method": zod.string(),
+  "status": zod.string(),
+  "reference": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListAdminPaymentsResponse = zod.array(ListAdminPaymentsResponseItem)
+
+
+/**
+ * @summary Record a new payment
+ */
+export const CreateAdminPaymentBody = zod.object({
+  "patientName": zod.string(),
+  "patientPhone": zod.string().optional(),
+  "patientEmail": zod.string().optional(),
+  "providerName": zod.string(),
+  "providerId": zod.number().optional(),
+  "appointmentId": zod.number().optional(),
+  "amount": zod.number(),
+  "currency": zod.string().optional(),
+  "method": zod.string().optional(),
+  "status": zod.string().optional(),
+  "reference": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+export const CreateAdminPaymentResponse = zod.object({
+  "id": zod.number(),
+  "appointmentId": zod.number().nullish(),
+  "patientName": zod.string(),
+  "patientPhone": zod.string().nullish(),
+  "patientEmail": zod.string().nullish(),
+  "providerName": zod.string(),
+  "providerId": zod.number().nullish(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "method": zod.string(),
+  "status": zod.string(),
+  "reference": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Update a payment's status/reference/notes
+ */
+export const UpdateAdminPaymentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateAdminPaymentBody = zod.object({
+  "status": zod.string().optional(),
+  "reference": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+export const UpdateAdminPaymentResponse = zod.object({
+  "id": zod.number(),
+  "appointmentId": zod.number().nullish(),
+  "patientName": zod.string(),
+  "patientPhone": zod.string().nullish(),
+  "patientEmail": zod.string().nullish(),
+  "providerName": zod.string(),
+  "providerId": zod.number().nullish(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "method": zod.string(),
+  "status": zod.string(),
+  "reference": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a payment
+ */
+export const DeleteAdminPaymentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteAdminPaymentResponse = zod.unknown()
+
+
+/**
+ * @summary Bulk-update appointment status (e.g. approve multiple)
+ */
+export const BulkUpdateAppointmentsBody = zod.object({
+  "ids": zod.array(zod.number()),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed'])
+})
+
+export const BulkUpdateAppointmentsResponse = zod.object({
+  "updated": zod.number().optional(),
+  "appointments": zod.array(zod.object({
+  "id": zod.number(),
+  "patientName": zod.string(),
+  "patientEmail": zod.string(),
+  "providerId": zod.number(),
+  "providerName": zod.string(),
+  "date": zod.string(),
+  "time": zod.string(),
+  "type": zod.string(),
+  "status": zod.string(),
+  "notes": zod.string().nullish(),
+  "patientPhone": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "careType": zod.string().nullish(),
+  "diagnosisSummary": zod.string().nullish(),
+  "approvedAt": zod.string().nullish(),
+  "approvedBy": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional()
+})
+
+
+/**
+ * @summary List most recent ratings (admin view)
+ */
+export const ListAdminRatingsResponseItem = zod.object({
+  "id": zod.number(),
+  "appointmentId": zod.number().nullish(),
+  "providerId": zod.number(),
+  "patientName": zod.string(),
+  "rating": zod.number(),
+  "mood": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "sessionDate": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListAdminRatingsResponse = zod.array(ListAdminRatingsResponseItem)
 
 

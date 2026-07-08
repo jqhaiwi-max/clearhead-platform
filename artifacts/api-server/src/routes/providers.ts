@@ -6,6 +6,7 @@ import {
   ListProvidersQueryParams,
   CreateProviderBody,
 } from "@workspace/api-zod";
+import { requireAdmin } from "../middleware/requireAdmin.js";
 
 const router = Router();
 
@@ -65,7 +66,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireAdmin, async (req, res) => {
   try {
     const data = CreateProviderBody.parse(req.body);
     const [provider] = await db
@@ -78,7 +79,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const body = req.body as Record<string, unknown>;
@@ -106,7 +107,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     await db.delete(providersTable).where(eq(providersTable.id, id));

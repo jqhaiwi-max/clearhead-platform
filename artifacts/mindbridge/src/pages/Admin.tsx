@@ -1,5 +1,6 @@
 import { useState, useMemo, Fragment } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard, Users, CalendarDays, Stethoscope,
@@ -13,6 +14,14 @@ import {
 
 const BASE_URL = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
 const api = (path: string) => `${BASE_URL}/api${path}`;
+
+async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const headers = new Headers(init.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return fetch(input, { ...init, headers });
+}
 
 type Section = "dashboard" | "patients" | "appointments" | "providers" | "payments" | "integrations" | "settings";
 
@@ -92,7 +101,7 @@ function StatCard({ icon: Icon, label, value, sub, color }: {
 function Dashboard() {
   const { data: stats, isLoading } = useQuery<AdminStats>({
     queryKey: ["admin-stats"],
-    queryFn: () => fetch(api("/admin/stats")).then(r => r.json()),
+    queryFn: () => authFetch(api("/admin/stats")).then(r => r.json()),
   });
 
   if (isLoading) return <LoadingSpinner />;
@@ -173,7 +182,7 @@ function Patients() {
   const [search, setSearch] = useState("");
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
     queryKey: ["appointments"],
-    queryFn: () => fetch(api("/appointments")).then(r => r.json()),
+    queryFn: () => authFetch(api("/appointments")).then(r => r.json()),
   });
 
   const patients = useMemo(() => {
@@ -302,13 +311,13 @@ function Appointments() {
 
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
     queryKey: ["appointments"],
-    queryFn: () => fetch(api("/appointments")).then(r => r.json()),
+    queryFn: () => authFetch(api("/appointments")).then(r => r.json()),
     refetchInterval: 30_000,
   });
 
   const updateStatus = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
-      fetch(api(`/appointments/${id}`), {
+      authFetch(api(`/appointments/${id}`), {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       }).then(r => r.json()),
@@ -317,7 +326,7 @@ function Appointments() {
 
   const bulkUpdate = useMutation({
     mutationFn: ({ ids, status }: { ids: number[]; status: string }) =>
-      fetch(api("/admin/appointments/bulk"), {
+      authFetch(api("/admin/appointments/bulk"), {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids, status }),
       }).then(r => r.json()),
@@ -655,7 +664,7 @@ function ProviderModal({ provider, onClose }: { provider: Partial<Provider> | nu
           ? (form.qualifications as unknown as string).split(",").map((s: string) => s.trim()).filter(Boolean)
           : form.qualifications,
       };
-      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const res = await authFetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error(await res.text());
       await qc.invalidateQueries({ queryKey: ["providers"] });
       onClose();
@@ -785,11 +794,11 @@ function Providers() {
 
   const { data: providers = [], isLoading } = useQuery<Provider[]>({
     queryKey: ["providers"],
-    queryFn: () => fetch(api("/providers")).then(r => r.json()),
+    queryFn: () => authFetch(api("/providers")).then(r => r.json()),
   });
 
   const deleteProvider = useMutation({
-    mutationFn: (id: number) => fetch(api(`/providers/${id}`), { method: "DELETE" }).then(r => r.json()),
+    mutationFn: (id: number) => authFetch(api(`/providers/${id}`), { method: "DELETE" }).then(r => r.json()),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["providers"] }),
   });
 
@@ -913,12 +922,12 @@ function Payments() {
 
   const { data: payments = [], isLoading } = useQuery<Payment[]>({
     queryKey: ["admin-payments"],
-    queryFn: () => fetch(api("/admin/payments")).then(r => r.json()),
+    queryFn: () => authFetch(api("/admin/payments")).then(r => r.json()),
   });
 
   const updatePayment = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
-      fetch(api(`/admin/payments/${id}`), {
+      authFetch(api(`/admin/payments/${id}`), {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       }).then(r => r.json()),
@@ -1009,7 +1018,7 @@ function AddPaymentForm({ onClose }: { onClose: () => void }) {
   const save = async () => {
     if (!form.patientName || !form.providerName || !form.amount) return;
     setSaving(true);
-    await fetch(api("/admin/payments"), {
+    await authFetch(api("/admin/payments"), {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, amount: Math.round(parseFloat(form.amount) * 100) }),
     });
