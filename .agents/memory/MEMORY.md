@@ -4,3 +4,4 @@
 - [Clearhead pricing.ts structure](clearhead-pricing.md) — CountryPricing type requires tiers[], taxRate, taxNote; auto-computed by buildCountry()/makeTiers(); formatPrice/toUSD must be exported.
 - [Clearhead DB constraints](clearhead-db.md) — appointments table has no duration column; slots endpoint uses drizzle and() for compound WHERE; POST /appointments checks for conflicts and returns 409.
 - [DOBPicker controlled input pattern](dobpicker-state.md) — multi-part date pickers must use internal useState per part; deriving from parent value prop resets selections on each partial change.
+- [Stuck secret values](stuck-secret-values.md) — a secret can keep serving a stale/wrong value after re-entry via requestEnvVar and even after deleteEnvVars; verify with viewEnvVars/shell before assuming a user-provided key is bad.
