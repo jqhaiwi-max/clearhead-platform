@@ -9,4 +9,5 @@
 export interface AppointmentUpdate {
   status?: string;
   notes?: string;
+  approvedBy?: string;
 }

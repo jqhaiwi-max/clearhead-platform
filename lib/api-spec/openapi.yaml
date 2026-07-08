@@ -343,6 +343,18 @@ components:
           type: string
         notes:
           type: ["string", "null"]
+        patientPhone:
+          type: ["string", "null"]
+        paymentMethod:
+          type: ["string", "null"]
+        careType:
+          type: ["string", "null"]
+        diagnosisSummary:
+          type: ["string", "null"]
+        approvedAt:
+          type: ["string", "null"]
+        approvedBy:
+          type: ["string", "null"]
         createdAt:
           type: string
 
@@ -364,6 +376,14 @@ components:
           type: string
         notes:
           type: string
+        patientPhone:
+          type: string
+        paymentMethod:
+          type: string
+        careType:
+          type: string
+        diagnosisSummary:
+          type: string
 
     AppointmentUpdate:
       type: object
@@ -371,6 +391,8 @@ components:
         status:
           type: string
         notes:
+          type: string
+        approvedBy:
           type: string
 
     Specialty:

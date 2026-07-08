@@ -14,4 +14,8 @@ export interface AppointmentInput {
   time: string;
   type: string;
   notes?: string;
+  patientPhone?: string;
+  paymentMethod?: string;
+  careType?: string;
+  diagnosisSummary?: string;
 }

@@ -52,6 +52,18 @@ export interface Appointment {
   status: string;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  patientPhone?: string | null;
+  /** @nullable */
+  paymentMethod?: string | null;
+  /** @nullable */
+  careType?: string | null;
+  /** @nullable */
+  diagnosisSummary?: string | null;
+  /** @nullable */
+  approvedAt?: string | null;
+  /** @nullable */
+  approvedBy?: string | null;
   createdAt: string;
 }
 
@@ -63,11 +75,16 @@ export interface AppointmentInput {
   time: string;
   type: string;
   notes?: string;
+  patientPhone?: string;
+  paymentMethod?: string;
+  careType?: string;
+  diagnosisSummary?: string;
 }
 
 export interface AppointmentUpdate {
   status?: string;
   notes?: string;
+  approvedBy?: string;
 }
 
 export interface Specialty {

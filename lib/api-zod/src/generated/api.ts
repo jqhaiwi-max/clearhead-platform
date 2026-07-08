@@ -117,6 +117,12 @@ export const ListAppointmentsResponseItem = zod.object({
   "type": zod.string(),
   "status": zod.string(),
   "notes": zod.string().nullish(),
+  "patientPhone": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "careType": zod.string().nullish(),
+  "diagnosisSummary": zod.string().nullish(),
+  "approvedAt": zod.string().nullish(),
+  "approvedBy": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListAppointmentsResponse = zod.array(ListAppointmentsResponseItem)
@@ -132,7 +138,11 @@ export const CreateAppointmentBody = zod.object({
   "date": zod.string(),
   "time": zod.string(),
   "type": zod.string(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "patientPhone": zod.string().optional(),
+  "paymentMethod": zod.string().optional(),
+  "careType": zod.string().optional(),
+  "diagnosisSummary": zod.string().optional()
 })
 
 export const CreateAppointmentResponse = zod.object({
@@ -146,6 +156,12 @@ export const CreateAppointmentResponse = zod.object({
   "type": zod.string(),
   "status": zod.string(),
   "notes": zod.string().nullish(),
+  "patientPhone": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "careType": zod.string().nullish(),
+  "diagnosisSummary": zod.string().nullish(),
+  "approvedAt": zod.string().nullish(),
+  "approvedBy": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -168,6 +184,12 @@ export const GetAppointmentResponse = zod.object({
   "type": zod.string(),
   "status": zod.string(),
   "notes": zod.string().nullish(),
+  "patientPhone": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "careType": zod.string().nullish(),
+  "diagnosisSummary": zod.string().nullish(),
+  "approvedAt": zod.string().nullish(),
+  "approvedBy": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -181,7 +203,8 @@ export const UpdateAppointmentParams = zod.object({
 
 export const UpdateAppointmentBody = zod.object({
   "status": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "approvedBy": zod.string().optional()
 })
 
 export const UpdateAppointmentResponse = zod.object({
@@ -195,6 +218,12 @@ export const UpdateAppointmentResponse = zod.object({
   "type": zod.string(),
   "status": zod.string(),
   "notes": zod.string().nullish(),
+  "patientPhone": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "careType": zod.string().nullish(),
+  "diagnosisSummary": zod.string().nullish(),
+  "approvedAt": zod.string().nullish(),
+  "approvedBy": zod.string().nullish(),
   "createdAt": zod.string()
 })
 

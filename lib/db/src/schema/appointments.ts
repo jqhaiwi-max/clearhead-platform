@@ -15,6 +15,10 @@ export const appointmentsTable = pgTable("appointments", {
   notes: text("notes"),
   patientPhone: text("patient_phone"),
   paymentMethod: text("payment_method"),
+  careType: text("care_type"),
+  diagnosisSummary: text("diagnosis_summary"),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: text("approved_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
