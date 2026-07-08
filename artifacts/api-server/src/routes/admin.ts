@@ -7,6 +7,7 @@ import {
   ratingsTable,
 } from "@workspace/db";
 import { eq, desc, count, sql, inArray } from "drizzle-orm";
+import { sendDoctorAssignmentEmail } from "../lib/email.js";
 
 const router = Router();
 
@@ -129,11 +130,35 @@ router.patch("/appointments/bulk", async (req, res) => {
       return res.status(400).json({ error: `status must be one of: ${valid.join(", ")}` });
     }
     const numIds = ids.map(Number).filter(n => !isNaN(n));
+
+    const before = status === "confirmed"
+      ? await db.select().from(appointmentsTable).where(inArray(appointmentsTable.id, numIds))
+      : [];
+    const newlyConfirmedIds = new Set(before.filter(a => a.status !== "confirmed").map(a => a.id));
+
     const updated = await db
       .update(appointmentsTable)
-      .set({ status })
+      .set({
+        status,
+        ...(status === "confirmed" ? { approvedAt: new Date(), approvedBy: "Admin" } : {}),
+      })
       .where(inArray(appointmentsTable.id, numIds))
       .returning();
+
+    if (newlyConfirmedIds.size > 0) {
+      const providers = await db
+        .select()
+        .from(providersTable)
+        .where(inArray(providersTable.id, updated.filter(a => newlyConfirmedIds.has(a.id)).map(a => a.providerId)));
+      const providerById = new Map(providers.map(p => [p.id, p]));
+      for (const appt of updated) {
+        if (!newlyConfirmedIds.has(appt.id)) continue;
+        sendDoctorAssignmentEmail(appt, providerById.get(appt.providerId)).catch((err) =>
+          console.error("[admin] Failed to send doctor assignment email:", err)
+        );
+      }
+    }
+
     return res.json({ updated: updated.length, appointments: updated });
   } catch (err) {
     return res.status(500).json({ error: "Failed to bulk update appointments" });

@@ -176,6 +176,8 @@ export default function Checkout() {
   const initialEmail    = params.get("email") || "";
   const initialPromo    = params.get("promo") || "";
   const initialPid      = params.get("pid")   || "";
+  const careType        = params.get("careType") || "";
+  const diagnosisSummary = params.get("diagnosis") || "";
 
   const { country, setCountry } = useCountry();
   const { t, dir }  = useLang();
@@ -315,11 +317,13 @@ export default function Checkout() {
         date,
         time,
         type: "video",
+        patientPhone: patientPhone.trim(),
+        paymentMethod: payMethod,
+        careType: careType || undefined,
+        diagnosisSummary: diagnosisSummary || undefined,
         notes: [
           `PatientID:${patientId}`,
           `Name:${patientName.trim()}`,
-          `Phone:${patientPhone}`,
-          `Payment:${payMethod}`,
           appliedCode ? `Promo:${appliedCode.code}` : "",
         ].filter(Boolean).join(" | "),
       });

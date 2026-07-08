@@ -48,6 +48,32 @@ function getRecMeta(scores: Scores, careType: string): RecMeta {
   return                             { key:"counselor",           specialty:"",          urgent:false,   color:"emerald" };
 }
 
+function phq9Severity(score: number): string {
+  if (score >= 20) return "Severe";
+  if (score >= 15) return "Moderately Severe";
+  if (score >= 10) return "Moderate";
+  if (score >= 5)  return "Mild";
+  return "Minimal";
+}
+
+function buildDiagnosisSummary(opts: {
+  scores: Scores; rec: RecMeta; careType: string;
+  prevDx: string[]; familyDx: string[]; prevTherapy: string; medications: string;
+}): string {
+  const { scores, rec, careType, prevDx, familyDx, prevTherapy, medications } = opts;
+  const lines = [
+    `Care Type: ${careType || "—"}`,
+    `PHQ-9 Score: ${scores.phq9}/27 (${phq9Severity(scores.phq9)})`,
+    scores.hasRisk ? `⚠️ Risk flag: patient endorsed self-harm/suicidal ideation item — prioritize review.` : "",
+    `Recommended Care: ${rec.key}${rec.urgent ? " (URGENT)" : ""}`,
+    prevDx.length ? `Previous Diagnoses: ${prevDx.join(", ")}` : "",
+    familyDx.length ? `Family History: ${familyDx.join(", ")}` : "",
+    prevTherapy ? `Previous Therapy: ${prevTherapy}` : "",
+    medications ? `Current Medications: ${medications}` : "",
+  ].filter(Boolean);
+  return lines.join("\n");
+}
+
 function scoreLevelIndex(val: number, thresholds: number[]): number {
   if (val < thresholds[0]) return 0;
   if (val < thresholds[1]) return 1;
@@ -558,6 +584,7 @@ export default function BookingJourney() {
   /* Go to Checkout with all collected journey data pre-filled */
   const goToCheckout = useCallback(() => {
     if (!provider || !date || !time) return;
+    const diagnosis = buildDiagnosisSummary({ scores, rec, careType, prevDx, familyDx, prevTherapy, medications });
     const p = new URLSearchParams({
       provider: String(provider.id),
       date,
@@ -569,10 +596,11 @@ export default function BookingJourney() {
       country: nationality,
       pid: patientId,
       careType,
+      diagnosis,
       ...(promo ? { promo: promo.code } : {}),
     });
     navigate(`/checkout?${p.toString()}`);
-  }, [provider, date, time, duration, firstName, lastName, contactMethod, contactDetail, nationality, patientId, careType, promo, navigate]);
+  }, [provider, date, time, duration, firstName, lastName, contactMethod, contactDetail, nationality, patientId, careType, promo, navigate, scores, rec, prevDx, familyDx, prevTherapy, medications]);
 
   /* handleBook kept for legacy/direct use (no longer called from the journey UI) */
   const handleBook = async () => {

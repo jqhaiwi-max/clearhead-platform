@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -29,6 +29,8 @@ interface Appointment {
   id: number; patientName: string; patientEmail: string; patientPhone: string | null;
   providerId: number; providerName: string; date: string; time: string;
   type: string; status: string; notes: string | null; paymentMethod: string | null;
+  careType: string | null; diagnosisSummary: string | null;
+  approvedAt: string | null; approvedBy: string | null;
   createdAt: string;
 }
 
@@ -290,7 +292,13 @@ function Appointments() {
   const [search, setSearch]       = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [selected, setSelected]   = useState<Set<number>>(new Set());
+  const [expanded, setExpanded]   = useState<Set<number>>(new Set());
   const qc = useQueryClient();
+  const toggleExpanded = (id: number) => setExpanded(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
     queryKey: ["appointments"],
@@ -475,7 +483,8 @@ function Appointments() {
                 const isConfirmed = a.status === "confirmed";
                 const isActive    = isPending || isConfirmed;
                 return (
-                  <tr key={a.id}
+                  <Fragment key={a.id}>
+                  <tr
                     className={`transition-colors ${isSel ? "bg-emerald-50/70" : isPending ? "bg-amber-50/30 hover:bg-amber-50/60" : "hover:bg-gray-50"}`}>
                     {/* Checkbox */}
                     <td className="px-3 py-3">
@@ -493,6 +502,12 @@ function Appointments() {
                           className="inline-flex items-center gap-0.5 text-xs text-[#128C7E] hover:underline mt-0.5">
                           <MessageCircle className="w-3 h-3" /> {a.patientPhone}
                         </a>
+                      )}
+                      {a.diagnosisSummary && (
+                        <button onClick={() => toggleExpanded(a.id)}
+                          className="inline-flex items-center gap-0.5 text-xs text-amber-700 hover:underline mt-0.5">
+                          <AlertCircle className="w-3 h-3" /> {expanded.has(a.id) ? "Hide" : "View"} diagnosis
+                        </button>
                       )}
                     </td>
 
@@ -572,6 +587,21 @@ function Appointments() {
                       </div>
                     </td>
                   </tr>
+                  {expanded.has(a.id) && a.diagnosisSummary && (
+                    <tr key={`${a.id}-diagnosis`} className="bg-amber-50/40">
+                      <td></td>
+                      <td colSpan={7} className="px-3 pb-3">
+                        <div className="bg-white border border-amber-200 rounded-lg p-3">
+                          <p className="text-[11px] font-bold uppercase tracking-widest text-amber-700 mb-1">Screening / Diagnosis Summary</p>
+                          <p className="text-xs text-gray-700 whitespace-pre-wrap">{a.diagnosisSummary}</p>
+                          {a.approvedAt && (
+                            <p className="text-[11px] text-gray-400 mt-2">Approved {new Date(a.approvedAt).toLocaleString()} by {a.approvedBy ?? "Admin"}</p>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
               {filtered.length === 0 && (
