@@ -6,3 +6,4 @@
 - [DOBPicker controlled input pattern](dobpicker-state.md) — multi-part date pickers must use internal useState per part; deriving from parent value prop resets selections on each partial change.
 - [Stuck secret values](stuck-secret-values.md) — a secret can keep serving a stale/wrong value after re-entry via requestEnvVar and even after deleteEnvVars; verify with viewEnvVars/shell before assuming a user-provided key is bad.
 - [Clearhead patient identity](clearhead-patient-identity.md) — patients have no login; unauthenticated appointment lookups are scoped by email+phone match, not JWT.
+- [GitHub auto-sync via connector token](github-sync.md) — push to GitHub using the Replit GitHub connection's OAuth token (auto-refreshed), not just a manually pasted PAT; watch for `workflow` scope gaps and history divergence.
