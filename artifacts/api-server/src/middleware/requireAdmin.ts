@@ -14,6 +14,21 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
   supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
+export async function isAdminRequest(req: Request): Promise<boolean> {
+  if (!supabase) return false;
+  const header = req.headers.authorization;
+  const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+  if (!token) return false;
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data.user) return false;
+    const email = data.user.email?.toLowerCase();
+    return !!email && ADMIN_EMAILS.includes(email);
+  } catch {
+    return false;
+  }
+}
+
 export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (!supabase) {
     res.status(500).json({ error: "Auth is not configured on the server" });

@@ -15,6 +15,8 @@ export * from './bulkUpdateAppointments200';
 export * from './getBookedSlots200';
 export * from './getBookedSlotsParams';
 export * from './healthStatus';
+export * from './listAppointments400';
+export * from './listAppointmentsParams';
 export * from './listProvidersParams';
 export * from './payment';
 export * from './paymentInput';

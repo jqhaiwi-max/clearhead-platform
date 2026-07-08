@@ -328,6 +328,12 @@ export default function Checkout() {
         ].filter(Boolean).join(" | "),
       });
       setBookingResult({id: result!.id, date, time});
+      try {
+        localStorage.setItem("clearhead_patient_contact", JSON.stringify({
+          email: patientEmail.trim(),
+          phone: patientPhone.trim(),
+        }));
+      } catch {}
       setSubmitted(true);
     } catch (e: any) {
       setBookingError(e.message ?? "Booking failed. Please try again.");

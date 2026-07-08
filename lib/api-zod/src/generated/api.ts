@@ -164,8 +164,13 @@ export const GetBookedSlotsResponse = zod.object({
 
 
 /**
- * @summary List all appointments
+ * @summary List appointments. Admins (bearer token) receive all appointments; unauthenticated callers must supply email and phone to look up their own appointments.
  */
+export const ListAppointmentsQueryParams = zod.object({
+  "email": zod.coerce.string().optional().describe('Patient email, required for non-admin lookups'),
+  "phone": zod.coerce.string().optional().describe('Patient phone, required for non-admin lookups')
+})
+
 export const ListAppointmentsResponseItem = zod.object({
   "id": zod.number(),
   "patientName": zod.string(),

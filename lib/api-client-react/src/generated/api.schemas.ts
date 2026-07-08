@@ -220,6 +220,21 @@ export type GetBookedSlots200 = {
   bookedSlots?: string[];
 };
 
+export type ListAppointmentsParams = {
+/**
+ * Patient email, required for non-admin lookups
+ */
+email?: string;
+/**
+ * Patient phone, required for non-admin lookups
+ */
+phone?: string;
+};
+
+export type ListAppointments400 = {
+  error?: string;
+};
+
 export type BulkUpdateAppointments200 = {
   updated?: number;
   appointments?: Appointment[];

@@ -1,13 +1,64 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
 import {
   Calendar, Clock, Video, Phone, MessageSquare, ArrowRight, Play,
   Star, Heart, ChevronDown, Bell, CheckCircle, RotateCcw, Sparkles,
-  AlertCircle, RefreshCw, ChevronUp,
+  AlertCircle, RefreshCw, ChevronUp, Search, Mail,
 } from "lucide-react";
 import { useListAppointments } from "@workspace/api-client-react";
 import { AppointmentSkeleton } from "@/components/Skeleton";
+
+const CONTACT_STORAGE_KEY = "clearhead_patient_contact";
+
+type PatientContact = { email: string; phone: string };
+
+function readStoredContact(): PatientContact | null {
+  try {
+    const raw = localStorage.getItem(CONTACT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.email && parsed?.phone) return parsed;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function LookupForm({ onSubmit, error }: { onSubmit: (c: PatientContact) => void; error?: string }) {
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+      className="text-center py-16 px-6 bg-card border border-border rounded-2xl max-w-md mx-auto">
+      <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+      <h3 className="font-semibold text-foreground text-lg mb-2">Find your sessions</h3>
+      <p className="text-muted-foreground mb-6 text-sm">Enter the email and phone you used when booking to view your appointments.</p>
+      <form
+        onSubmit={(e) => { e.preventDefault(); if (email.trim() && phone.trim()) onSubmit({ email: email.trim(), phone: phone.trim() }); }}
+        className="space-y-3 text-left"
+      >
+        <div className="relative">
+          <Mail className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-input text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
+        </div>
+        <div className="relative">
+          <Phone className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+          <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone number"
+            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-input text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/40" />
+        </div>
+        {error && <p className="text-xs text-red-500">{error}</p>}
+        <button type="submit"
+          className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity">
+          Find my sessions
+        </button>
+      </form>
+    </motion.div>
+  );
+}
 
 const PAGE_STEP = 5;
 
@@ -199,9 +250,24 @@ function AppointmentCard({ apt, index }: { apt: any; index: number }) {
 }
 
 export default function Appointments() {
-  const { data: appointments, isLoading, isError, refetch } = useListAppointments();
+  const [contact, setContact] = useState<PatientContact | null>(() => readStoredContact());
+  const [lookupError, setLookupError] = useState<string | undefined>();
+
+  const { data: appointments, isLoading, isError, refetch } = useListAppointments(
+    contact ? { email: contact.email, phone: contact.phone } : undefined,
+    { query: { enabled: !!contact } as never }
+  );
   const [filter, setFilter]       = useState<"all" | "upcoming" | "completed">("all");
   const [visibleCount, setVisibleCount] = useState(PAGE_STEP);
+
+  useEffect(() => {
+    if (contact) setLookupError(undefined);
+  }, [contact]);
+
+  const handleLookup = (c: PatientContact) => {
+    try { localStorage.setItem(CONTACT_STORAGE_KEY, JSON.stringify(c)); } catch {}
+    setContact(c);
+  };
 
   const filtered = appointments
     ? appointments.filter((a) => {
@@ -236,8 +302,12 @@ export default function Appointments() {
               ))}
             </div>
 
-            {/* Loading — shaped skeletons */}
-            {isLoading ? (
+            {/* Lookup required — no stored contact yet */}
+            {!contact ? (
+              <LookupForm onSubmit={handleLookup} error={lookupError} />
+
+            /* Loading — shaped skeletons */
+            ) : isLoading ? (
               <div className="space-y-4">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -253,10 +323,16 @@ export default function Appointments() {
                 <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4"/>
                 <h3 className="font-semibold text-foreground text-lg mb-2">Failed to load sessions</h3>
                 <p className="text-muted-foreground mb-6">Something went wrong. Please try again.</p>
-                <button onClick={() => refetch()}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
-                  <RefreshCw className="w-4 h-4"/> Retry
-                </button>
+                <div className="flex gap-3 justify-center">
+                  <button onClick={() => refetch()}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity">
+                    <RefreshCw className="w-4 h-4"/> Retry
+                  </button>
+                  <button onClick={() => { setContact(null); try { localStorage.removeItem(CONTACT_STORAGE_KEY); } catch {} }}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border text-sm font-semibold text-foreground hover:bg-muted transition-colors">
+                    Use different details
+                  </button>
+                </div>
               </div>
 
             /* Empty state */

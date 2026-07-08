@@ -28,6 +28,8 @@ import type {
   GetBookedSlots200,
   GetBookedSlotsParams,
   HealthStatus,
+  ListAppointments400,
+  ListAppointmentsParams,
   ListProvidersParams,
   Payment,
   PaymentInput,
@@ -603,20 +605,27 @@ export function useGetBookedSlots<TData = Awaited<ReturnType<typeof getBookedSlo
 
 
 
-export const getListAppointmentsUrl = () => {
+export const getListAppointmentsUrl = (params?: ListAppointmentsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/appointments`
+  return stringifiedParams.length > 0 ? `/api/appointments?${stringifiedParams}` : `/api/appointments`
 }
 
 /**
- * @summary List all appointments
+ * @summary List appointments. Admins (bearer token) receive all appointments; unauthenticated callers must supply email and phone to look up their own appointments.
  */
-export const listAppointments = async ( options?: RequestInit): Promise<Appointment[]> => {
+export const listAppointments = async (params?: ListAppointmentsParams, options?: RequestInit): Promise<Appointment[]> => {
 
-  return customFetch<Appointment[]>(getListAppointmentsUrl(),
+  return customFetch<Appointment[]>(getListAppointmentsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -629,23 +638,23 @@ export const listAppointments = async ( options?: RequestInit): Promise<Appointm
 
 
 
-export const getListAppointmentsQueryKey = () => {
+export const getListAppointmentsQueryKey = (params?: ListAppointmentsParams,) => {
     return [
-    `/api/appointments`
+    `/api/appointments`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListAppointmentsQueryOptions = <TData = Awaited<ReturnType<typeof listAppointments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAppointments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListAppointmentsQueryOptions = <TData = Awaited<ReturnType<typeof listAppointments>>, TError = ErrorType<ListAppointments400>>(params?: ListAppointmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAppointments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListAppointmentsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListAppointmentsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAppointments>>> = ({ signal }) => listAppointments({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAppointments>>> = ({ signal }) => listAppointments(params, { signal, ...requestOptions });
 
 
 
@@ -655,19 +664,19 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListAppointmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listAppointments>>>
-export type ListAppointmentsQueryError = ErrorType<unknown>
+export type ListAppointmentsQueryError = ErrorType<ListAppointments400>
 
 
 /**
- * @summary List all appointments
+ * @summary List appointments. Admins (bearer token) receive all appointments; unauthenticated callers must supply email and phone to look up their own appointments.
  */
 
-export function useListAppointments<TData = Awaited<ReturnType<typeof listAppointments>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAppointments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useListAppointments<TData = Awaited<ReturnType<typeof listAppointments>>, TError = ErrorType<ListAppointments400>>(
+ params?: ListAppointmentsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAppointments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListAppointmentsQueryOptions(options)
+  const queryOptions = getListAppointmentsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

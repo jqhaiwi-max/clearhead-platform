@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { appointmentsTable, providersTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, isNull } from "drizzle-orm";
 import { CreateAppointmentBody, UpdateAppointmentBody } from "@workspace/api-zod";
 import { sendApprovalRequestEmail, sendDoctorAssignmentEmail } from "../lib/email.js";
 import { writeRateLimiter } from "../middleware/rateLimit.js";
+import { isAdminRequest } from "../middleware/requireAdmin.js";
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "jamal_alqhaiwi@yahoo.com";
 
@@ -30,10 +31,30 @@ router.get("/slots", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const appointments = await db.select().from(appointmentsTable).orderBy(appointmentsTable.createdAt);
-    res.json(appointments);
+    const isAdmin = await isAdminRequest(req);
+    if (isAdmin) {
+      const appointments = await db.select().from(appointmentsTable).orderBy(appointmentsTable.createdAt);
+      return res.json(appointments);
+    }
+
+    const { email, phone } = req.query as { email?: string; phone?: string };
+    if (!email || !phone) {
+      return res.status(400).json({ error: "email and phone are required to look up appointments" });
+    }
+
+    const appointments = await db
+      .select()
+      .from(appointmentsTable)
+      .where(
+        and(
+          eq(appointmentsTable.patientEmail, email.toLowerCase().trim()),
+          or(isNull(appointmentsTable.patientPhone), eq(appointmentsTable.patientPhone, phone.trim())),
+        )
+      )
+      .orderBy(appointmentsTable.createdAt);
+    return res.json(appointments);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch appointments" });
+    return res.status(500).json({ error: "Failed to fetch appointments" });
   }
 });
 

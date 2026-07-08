@@ -54,7 +54,7 @@ router.get("/featured", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const [provider] = await db
       .select()
       .from(providersTable)
@@ -81,7 +81,7 @@ router.post("/", requireAdmin, async (req, res) => {
 
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     const body = req.body as Record<string, unknown>;
     const allowed = [
       "name","title","specialty","bio","yearsExperience","imageUrl","available",
@@ -109,7 +109,7 @@ router.put("/:id", requireAdmin, async (req, res) => {
 
 router.delete("/:id", requireAdmin, async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
+    const id = parseInt(String(req.params.id));
     await db.delete(providersTable).where(eq(providersTable.id, id));
     res.json({ success: true });
   } catch (err) {

@@ -186,7 +186,23 @@ paths:
     get:
       operationId: listAppointments
       tags: [appointments]
-      summary: List all appointments
+      summary: List appointments. Admins (bearer token) receive all appointments; unauthenticated callers must supply email and phone to look up their own appointments.
+      security:
+        - bearerAuth: []
+        - {}
+      parameters:
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Patient email, required for non-admin lookups
+        - name: phone
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Patient phone, required for non-admin lookups
       responses:
         "200":
           description: List of appointments
@@ -196,6 +212,15 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Appointment"
+        "400":
+          description: Missing email/phone for non-admin lookup
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
     post:
       operationId: createAppointment
       tags: [appointments]
