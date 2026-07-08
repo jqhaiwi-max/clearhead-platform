@@ -18,9 +18,9 @@ router.get("/slots", async (req, res) => {
       .from(appointmentsTable)
       .where(and(eq(appointmentsTable.providerId, pid), eq(appointmentsTable.date, date)));
 
-    res.json({ bookedSlots: booked.map((r) => r.time) });
+    return res.json({ bookedSlots: booked.map((r) => r.time) });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch slots" });
+    return res.status(500).json({ error: "Failed to fetch slots" });
   }
 });
 
@@ -41,9 +41,9 @@ router.get("/:id", async (req, res) => {
       .from(appointmentsTable)
       .where(eq(appointmentsTable.id, id));
     if (!appointment) return res.status(404).json({ error: "Appointment not found" });
-    res.json(appointment);
+    return res.json(appointment);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch appointment" });
+    return res.status(500).json({ error: "Failed to fetch appointment" });
   }
 });
 
@@ -80,9 +80,9 @@ router.post("/", async (req, res) => {
         status: "pending",
       })
       .returning();
-    res.status(201).json(appointment);
+    return res.status(201).json(appointment);
   } catch (err) {
-    res.status(400).json({ error: "Invalid appointment data" });
+    return res.status(400).json({ error: "Invalid appointment data" });
   }
 });
 
@@ -96,9 +96,9 @@ router.patch("/:id", async (req, res) => {
       .where(eq(appointmentsTable.id, id))
       .returning();
     if (!appointment) return res.status(404).json({ error: "Appointment not found" });
-    res.json(appointment);
+    return res.json(appointment);
   } catch (err) {
-    res.status(400).json({ error: "Invalid appointment data" });
+    return res.status(400).json({ error: "Invalid appointment data" });
   }
 });
 

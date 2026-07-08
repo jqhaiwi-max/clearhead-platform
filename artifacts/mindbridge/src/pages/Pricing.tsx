@@ -66,7 +66,7 @@ function TierCard({ tier, country, isAnnual }: { tier: CountryPricing["tiers"][0
         </div>
       )}
       <div className="mb-6">
-        <h3 className={`font-serif text-xl font-bold mb-1 ${tier.recommended ? "text-white" : "text-foreground"}`}>{tier.label}</h3>
+        <h3 className={`font-serif text-xl font-bold mb-1 ${tier.recommended ? "text-white" : "text-foreground"}`}>{tier.name}</h3>
         <p className={`text-sm ${tier.recommended ? "text-white/70" : "text-muted-foreground"}`}>{tier.minutesPerSession} min · {tier.sessionsPerMonth} sessions/mo</p>
       </div>
       <div className="mb-6">

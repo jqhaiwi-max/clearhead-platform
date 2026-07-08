@@ -85,9 +85,9 @@ router.post("/payments", async (req, res) => {
                  method: method ?? "credit", status: status ?? "pending",
                  reference, notes })
       .returning();
-    res.status(201).json(payment);
+    return res.status(201).json(payment);
   } catch (err) {
-    res.status(400).json({ error: "Invalid payment data" });
+    return res.status(400).json({ error: "Invalid payment data" });
   }
 });
 
@@ -101,9 +101,9 @@ router.patch("/payments/:id", async (req, res) => {
       .where(eq(paymentsTable.id, id))
       .returning();
     if (!payment) return res.status(404).json({ error: "Payment not found" });
-    res.json(payment);
+    return res.json(payment);
   } catch (err) {
-    res.status(400).json({ error: "Failed to update payment" });
+    return res.status(400).json({ error: "Failed to update payment" });
   }
 });
 
@@ -134,9 +134,9 @@ router.patch("/appointments/bulk", async (req, res) => {
       .set({ status })
       .where(inArray(appointmentsTable.id, numIds))
       .returning();
-    res.json({ updated: updated.length, appointments: updated });
+    return res.json({ updated: updated.length, appointments: updated });
   } catch (err) {
-    res.status(500).json({ error: "Failed to bulk update appointments" });
+    return res.status(500).json({ error: "Failed to bulk update appointments" });
   }
 });
 

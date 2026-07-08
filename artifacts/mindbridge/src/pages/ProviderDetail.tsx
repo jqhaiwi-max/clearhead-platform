@@ -125,7 +125,7 @@ function RateSessionForm({ provider, onSubmit }: { provider: { id: number; name:
 }
 
 export default function ProviderDetail({ id }: Props) {
-  const { data: provider, isLoading, refetch } = useGetProvider(parseInt(id), { query: { enabled: !!id } });
+  const { data: provider, isLoading, refetch } = useGetProvider(parseInt(id), { query: { enabled: !!id } as never });
   const { country } = useCountry();
   const [showRateForm, setShowRateForm] = useState(false);
   const [reviews] = useState([

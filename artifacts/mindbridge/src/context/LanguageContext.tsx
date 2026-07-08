@@ -1012,7 +1012,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, [lang]);
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t: translations[lang], dir: translations[lang].dir }}>
+    <LanguageContext.Provider value={{ lang, setLang, t: translations[lang] as TranslationKeys, dir: translations[lang].dir }}>
       {children}
     </LanguageContext.Provider>
   );

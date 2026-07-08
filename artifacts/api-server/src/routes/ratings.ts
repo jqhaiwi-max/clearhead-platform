@@ -37,9 +37,9 @@ router.post("/", async (req, res) => {
       .set({ rating: Math.round(newAvg * 10) / 10, reviewCount: newCount })
       .where(eq(providersTable.id, providerId));
 
-    res.status(201).json(newRating);
+    return res.status(201).json(newRating);
   } catch (err) {
-    res.status(500).json({ error: "Failed to submit rating" });
+    return res.status(500).json({ error: "Failed to submit rating" });
   }
 });
 

@@ -59,9 +59,9 @@ router.get("/:id", async (req, res) => {
       .from(providersTable)
       .where(eq(providersTable.id, id));
     if (!provider) return res.status(404).json({ error: "Provider not found" });
-    res.json(provider);
+    return res.json(provider);
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch provider" });
+    return res.status(500).json({ error: "Failed to fetch provider" });
   }
 });
 
@@ -96,13 +96,13 @@ router.put("/:id", async (req, res) => {
     }
     const [provider] = await db
       .update(providersTable)
-      .set(update as Parameters<typeof db.update>[0] extends infer T ? T : never)
+      .set(update as unknown as typeof providersTable.$inferInsert)
       .where(eq(providersTable.id, id))
       .returning();
     if (!provider) return res.status(404).json({ error: "Provider not found" });
-    res.json(provider);
+    return res.json(provider);
   } catch (err) {
-    res.status(400).json({ error: "Failed to update provider" });
+    return res.status(400).json({ error: "Failed to update provider" });
   }
 });
 

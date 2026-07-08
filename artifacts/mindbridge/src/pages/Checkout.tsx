@@ -180,7 +180,7 @@ export default function Checkout() {
   const { country, setCountry } = useCountry();
   const { t, dir }  = useLang();
   const tc          = t.checkout;
-  const { data: provider } = useGetProvider(providerId, { query: { enabled: !!providerId } });
+  const { data: provider } = useGetProvider(providerId, { query: { enabled: !!providerId } as never });
 
   /* Stable patient ID — reuse journey ID if provided */
   const patientIdRef = useRef(initialPid || generatePatientId());

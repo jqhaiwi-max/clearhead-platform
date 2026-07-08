@@ -164,7 +164,7 @@ export default function Simulator() {
                   {country.tiers.map((t, i) => (
                     <button key={t.name} onClick={() => setTierIndex(i)}
                       className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all ${tierIndex === i ? "bg-primary text-primary-foreground border-primary" : "border-border text-foreground hover:border-primary/40"}`}>
-                      {t.label}
+                      {t.name}
                     </button>
                   ))}
                 </div>

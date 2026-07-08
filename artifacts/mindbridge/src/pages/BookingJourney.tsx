@@ -484,7 +484,7 @@ export default function BookingJourney() {
   const nationalityCountry = COUNTRY_LIST.find(c=>c.code===nationality) ?? globalCountry;
 
   /* Provider data */
-  const { data: allProviders=[], isLoading: providersLoading } = useListProviders({ available:true },{query:{staleTime:60000}});
+  const { data: allProviders=[], isLoading: providersLoading } = useListProviders({ available:true });
   const filteredProviders = (allProviders as Provider[]).filter(p => {
     const spec = p.specialty.toLowerCase()+" "+p.title.toLowerCase();
     return (rec.specialty ? spec.includes(rec.specialty.toLowerCase()) : true)
@@ -1327,7 +1327,7 @@ export default function BookingJourney() {
               if(phase===1&&step===1)  return j.continueToPrefs;
               if(phase===2&&step===0)  return j.findProvider;
               if(phase===3&&step===3)  return j.reviewBookingBtn;
-              if(isBookStep)           return j.proceedToPayment ?? "Proceed to Payment →";
+              if(isBookStep)           return (j as unknown as Record<string, unknown>)["proceedToPayment"] as string ?? "Proceed to Payment →";
               return j.continueBtn;
             })();
 
