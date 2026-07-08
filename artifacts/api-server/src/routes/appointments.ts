@@ -3,6 +3,9 @@ import { db } from "@workspace/db";
 import { appointmentsTable, providersTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { CreateAppointmentBody, UpdateAppointmentBody } from "@workspace/api-zod";
+import { sendApprovalRequestEmail, sendDoctorAssignmentEmail } from "../lib/email.js";
+
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "jamal_alqhaiwi@yahoo.com";
 
 const router = Router();
 
@@ -80,6 +83,11 @@ router.post("/", async (req, res) => {
         status: "pending",
       })
       .returning();
+
+    sendApprovalRequestEmail(appointment, provider, ADMIN_EMAIL).catch((err) =>
+      console.error("[appointments] Failed to send approval request email:", err)
+    );
+
     return res.status(201).json(appointment);
   } catch (err) {
     return res.status(400).json({ error: "Invalid appointment data" });
@@ -90,12 +98,29 @@ router.patch("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const data = UpdateAppointmentBody.parse(req.body);
+
+    const [existing] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, id));
+    if (!existing) return res.status(404).json({ error: "Appointment not found" });
+
+    const becomingConfirmed = data.status === "confirmed" && existing.status !== "confirmed";
+
     const [appointment] = await db
       .update(appointmentsTable)
-      .set(data)
+      .set({
+        ...data,
+        ...(becomingConfirmed ? { approvedAt: new Date(), approvedBy: data.approvedBy ?? "Admin" } : {}),
+      })
       .where(eq(appointmentsTable.id, id))
       .returning();
     if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+
+    if (becomingConfirmed) {
+      const [provider] = await db.select().from(providersTable).where(eq(providersTable.id, appointment.providerId));
+      sendDoctorAssignmentEmail(appointment, provider).catch((err) =>
+        console.error("[appointments] Failed to send doctor assignment email:", err)
+      );
+    }
+
     return res.json(appointment);
   } catch (err) {
     return res.status(400).json({ error: "Invalid appointment data" });

@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { initAnalytics, trackPageView } from "@/lib/analytics";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CountryProvider } from "@/context/CountryContext";
@@ -44,6 +46,14 @@ const FULL_SCREEN_ROUTES = ["/get-started", "/session", "/book-now", "/admin", "
 function Router() {
   const [location] = useLocation();
   const isFullScreen = FULL_SCREEN_ROUTES.some((r) => location.startsWith(r));
+
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
+  useEffect(() => {
+    trackPageView(location);
+  }, [location]);
 
   return (
     <>
